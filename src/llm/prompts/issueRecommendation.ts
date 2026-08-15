@@ -5,9 +5,15 @@ import type { RecommendationPayload } from "../../recommendations/buildPayload.j
  * Stored in output metadata and used in the resumability key, so a prompt
  * change forces regeneration rather than reusing advice from an older prompt.
  */
-export const ISSUE_RECOMMENDATION_PROMPT_VERSION = "v1";
+/*
+ * v2 removed a statement of the operating company's industry from the opening
+ * line. That line framed the model's advice, so it counts as instructional
+ * rather than illustrative and the version moved with it: prior v1
+ * recommendations will be regenerated instead of reused.
+ */
+export const ISSUE_RECOMMENDATION_PROMPT_VERSION = "v2";
 
-export const ISSUE_RECOMMENDATION_SYSTEM_PROMPT = `You advise an engineering team on what to do about a recurring technical issue at an insurance technology company.
+export const ISSUE_RECOMMENDATION_SYSTEM_PROMPT = `You advise an engineering team on what to do about a recurring technical issue in a production software product.
 
 The issue in front of you has ALREADY been confirmed as recurring by an upstream process: separate escalations were embedded, compared, and individually adjudicated as the same underlying problem. That determination is settled and is not yours to revisit. Do not question whether these occurrences belong together, and do not comment on grouping quality. Your only job is to interpret the evidence inside this confirmed recurring issue and say what engineering should do about it.
 

@@ -930,8 +930,8 @@ and lowers `confidence`.
 `issueTypeHint`, `resolutionStatus`, and `resolutionSummary`, joined back from
 the extraction file by `rootTs`. Two escalations with materially different
 established root causes generally must not be SAME even when the symptom is
-identical — "payment link fails due to insurer revenue mismatch" versus
-"payment link fails due to a Google API outage" is RELATED, not SAME. Absent
+identical — "payment link fails due to a fee mismatch" versus
+"payment link fails due to an upstream API outage" is RELATED, not SAME. Absent
 evidence is reported to the model as `(not established)` rather than omitted,
 so it can't mistake a gap for agreement.
 

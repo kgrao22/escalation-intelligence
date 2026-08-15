@@ -210,7 +210,7 @@ describe("buildRecommendationPayload", () => {
 
 describe("ISSUE_RECOMMENDATION prompt", () => {
   it("is version v1", () => {
-    expect(ISSUE_RECOMMENDATION_PROMPT_VERSION).toBe("v1");
+    expect(ISSUE_RECOMMENDATION_PROMPT_VERSION).toBe("v2");
   });
 
   it("tells the model that recurrence is already settled upstream", () => {
