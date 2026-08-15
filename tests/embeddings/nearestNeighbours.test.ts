@@ -20,8 +20,8 @@ function entry(rootTs: string, statement: string, vector: number[]): EmbeddingEn
 
 // A and B point in nearly the same direction; C is orthogonal to both.
 const entries: EmbeddingEntry[] = [
-  entry("A", "GST omitted from invoice fee types", [1, 0]),
-  entry("B", "GST calculation excludes broker fees", [0.99, 0.14]),
+  entry("A", "Tax omitted from invoice fee types", [1, 0]),
+  entry("B", "Tax calculation excludes partner fees", [0.99, 0.14]),
   entry("C", "Bulk vehicle upload times out", [0, 1]),
 ];
 

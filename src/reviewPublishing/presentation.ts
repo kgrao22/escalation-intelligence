@@ -98,7 +98,7 @@ function isSubsetOf(inner: Set<string>, outer: Set<string>): boolean {
  * Collapses near-duplicate system labels for display.
  *
  * Extraction produced variants of one system across threads — "Stripe
- * integration", "Stripe integration, payment processing", "Payment processing
+ * integration", "Payments integration, payment processing", "Payment processing
  * integration with Stripe". Plain substring matching misses those because the
  * words are reordered, so labels are compared as token sets: when one label's
  * significant tokens are a subset of another's, the more specific label is kept.
@@ -152,7 +152,7 @@ export const MAX_DISPLAYED_SYSTEMS = 3;
 
 /**
  * Separator between system labels. A middot rather than a comma because the
- * labels themselves frequently contain commas ("Stripe integration, payment
+ * labels themselves frequently contain commas ("Payments integration, payment
  * processing"), which would make a comma-joined list impossible to read as
  * distinct entries.
  */
@@ -176,8 +176,8 @@ export function formatSystems(systems: string[], limit: number = MAX_DISPLAYED_S
 /**
  * Classification labels that describe a bucket rather than an action. When a
  * cluster carries one of these, the label alone cannot distinguish it from the
- * other clusters sharing it — the 365-day review rendered four different
- * actions all as "Backend operational corrections".
+ * other clusters sharing it: on a wide window several genuinely different
+ * actions all render under the same generic heading.
  */
 const GENERIC_CLASSIFICATIONS = new Set([
   "manual_backend_correction",
@@ -191,8 +191,8 @@ const LEADING_ADVERBS = /^(?:manually|automatically|repeatedly|periodically)\s+/
 
 /**
  * Words that begin a qualifying clause. Cutting here keeps the action itself
- * ("Extend payment link expiry") and drops the circumstances
- * ("...in backend systems when the link expires before the customer pays").
+ * ("Reset a stuck export job") and drops the circumstances
+ * ("...in the admin console when the nightly run has already failed twice").
  */
 const CLAUSE_BREAKS = new Set([
   "in", "when", "to", "from", "using", "across", "after", "because", "so",

@@ -22,15 +22,15 @@ function makeThread(rootText: string, replyTexts: string[]): EscalationThread {
 
 describe("isJiraSyncNoise", () => {
   it("flags a Jira task-creation announcement", () => {
-    expect(isJiraSyncNoise("@Krishna created a Task UP-4265 for this thread")).toBe(true);
+    expect(isJiraSyncNoise("@teammate created a Task ENG-1234 for this thread")).toBe(true);
   });
 
   it("flags a Jira thread-sync announcement", () => {
-    expect(isJiraSyncNoise("synced this conversation thread with the Jira work item UP-4265")).toBe(true);
+    expect(isJiraSyncNoise("synced this conversation thread with the Jira work item ENG-1234")).toBe(true);
   });
 
   it("does not flag a normal human reply that happens to contain a Jira URL", () => {
-    const text = "Root cause found — see https://jira.example.com/browse/UP-4265 for the fix details.";
+    const text = "Root cause found — see https://jira.example.com/browse/ENG-1234 for the fix details.";
     expect(isJiraSyncNoise(text)).toBe(false);
   });
 
@@ -54,14 +54,14 @@ describe("preprocessThreadForLLM", () => {
 
   it("removes Jira-sync-bot noise but keeps real replies, including ones with a Jira URL", () => {
     const thread = makeThread("Bulk upload failing", [
-      "@Krishna created a Task UP-4265 for this thread",
-      "Root cause: timeout on files over 50MB — see https://jira.example.com/browse/UP-4265",
-      "synced this conversation thread with the Jira work item UP-4265",
+      "@teammate created a Task ENG-1234 for this thread",
+      "Root cause: timeout on files over 50MB — see https://jira.example.com/browse/ENG-1234",
+      "synced this conversation thread with the Jira work item ENG-1234",
     ]);
 
     const cleaned = preprocessThreadForLLM(thread);
 
-    expect(cleaned.combinedText).not.toContain("created a Task UP-4265");
+    expect(cleaned.combinedText).not.toContain("created a Task ENG-1234");
     expect(cleaned.combinedText).not.toContain("synced this conversation thread");
     expect(cleaned.combinedText).toContain("Root cause: timeout on files over 50MB");
     expect(cleaned.originalReplyCount).toBe(3);

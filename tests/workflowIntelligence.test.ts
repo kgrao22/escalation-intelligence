@@ -61,7 +61,7 @@ const CASES = {
     isAutomationWorkflowCandidate: true,
     workflowClassification: "policy_state_change",
     normalizedWorkflowStatement:
-      "Support asks engineering to move a submitted program back into editable state so the broker can correct details before binding.",
+      "Support asks engineering to move a submitted application back into editable state so the partner can correct details before approval.",
     automationStatus: "manual",
     affectedSystem: "program-service",
   }),

@@ -150,6 +150,7 @@
     <p class="eyebrow">Architecture Reference · Companion to the Implementation Guide</p>
     <h1>Escalation Intelligence<br>Architecture</h1>
     <p class="standfirst">Every moving piece, every external service, and exactly what data crosses each boundary.</p>
+    <p class="standfirst"><b>Run figures throughout are illustrative</b>, not from any real deployment.</p>
   </header>
 
   <section id="whole">
@@ -161,35 +162,35 @@
       <pre class="mermaid">
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
 flowchart TB
-  SRC[("SLACK SOURCE<br/>#escalations-technology<br/>READ ONLY — never written to")]
+  SRC[("SLACK SOURCE<br/>#escalations<br/>READ ONLY — never written to")]
 
-  F["<b>1 · Fetch</b><br/>644 threads<br/><i>Slack API</i>"]
-  E["<b>2 · Extract</b><br/>one call per thread<br/><i>Anthropic · 347 calls</i>"]
+  F["<b>1 · Fetch</b><br/>600 threads<br/><i>Slack API</i>"]
+  E["<b>2 · Extract</b><br/>one call per thread<br/><i>Anthropic · 340 calls</i>"]
   SPLIT{"Two independent<br/>judgements per thread"}
 
-  subgraph TA ["TRACK A · Technical faults — 269 threads"]
+  subgraph TA ["TRACK A · Technical faults — 240 threads"]
     direction TB
-    A1["<b>3a · Embed</b> problem statements<br/><i>Voyage · 269 vectors</i>"]
-    A2["<b>4a · Pair + adjudicate</b><br/>36,046 pairs → 1,527 candidates<br/><i>Anthropic · 1,527 calls</i>"]
+    A1["<b>3a · Embed</b> problem statements<br/><i>Voyage · 240 vectors</i>"]
+    A2["<b>4a · Pair + adjudicate</b><br/>28,680 pairs → 1,400 candidates<br/><i>Anthropic · 1,400 calls</i>"]
     A3["<b>5a · Group</b><br/>complete-link cliques<br/><i>local</i>"]
     A4["<b>6a · Report</b> rank by evidence<br/><i>local</i>"]
-    A5["<b>7a · Recommend</b><br/><i>Anthropic · 44 calls</i>"]
+    A5["<b>7a · Recommend</b><br/><i>Anthropic · 40 calls</i>"]
     A1 --> A2 --> A3 --> A4 --> A5
   end
 
-  subgraph TBW ["TRACK B · Manual workflows — 314 threads"]
+  subgraph TBW ["TRACK B · Manual workflows — 280 threads"]
     direction TB
-    B1["<b>3b · Embed</b> workflow statements<br/><i>Voyage · 314 vectors</i>"]
-    B2["<b>4b · Pair + adjudicate</b><br/>49,141 pairs → 306 candidates<br/><i>Anthropic · 306 calls</i>"]
+    B1["<b>3b · Embed</b> workflow statements<br/><i>Voyage · 280 vectors</i>"]
+    B2["<b>4b · Pair + adjudicate</b><br/>39,060 pairs → 290 candidates<br/><i>Anthropic · 290 calls</i>"]
     B3["<b>5b · Cluster</b><br/>complete-link cliques<br/><i>local</i>"]
-    B4["<b>6b · Score 0-100 + Recommend</b><br/><i>Anthropic · 31 calls</i>"]
+    B4["<b>6b · Score 0-100 + Recommend</b><br/><i>Anthropic · 28 calls</i>"]
     B1 --> B2 --> B3 --> B4
   end
 
   R["<b>8 · Build review</b><br/>joins both tracks<br/><i>local · zero API</i>"]
   P["<b>9 · Slack preview</b><br/>1 parent + 4 replies<br/><i>local · zero API</i>"]
   PUB["<b>10 · Publish</b><br/>--publish required<br/><i>Slack API</i>"]
-  DST[("SLACK DESTINATION<br/>#escalations-intelligence<br/>WRITE ONLY — hard-locked")]
+  DST[("SLACK DESTINATION<br/>#escalations-review<br/>WRITE ONLY — hard-locked")]
 
   SRC --> F --> E --> SPLIT
   SPLIT --> A1
@@ -248,13 +249,13 @@ flowchart TB
 
     <p>This is the question people ask most, so here it is in the simplest terms.</p>
 
-    <p>Imagine 269 complaint letters, and you want to find the ones that describe the same problem. You could hand every possible pair to a careful human reader and ask "are these two the same?" — but with 269 letters there are <strong>36,046 pairs</strong>. That reader would take forever and cost a fortune.</p>
+    <p>Imagine 240 complaint letters, and you want to find the ones that describe the same problem. You could hand every possible pair to a careful human reader and ask "are these two the same?" — but with 240 letters there are <strong>28,680 pairs</strong>. That reader would take forever and cost a fortune.</p>
 
     <p>So instead you do it in two passes:</p>
 
     <ol>
-      <li><strong>Voyage sorts the pile roughly.</strong> It reads each letter once and gives it a position — like putting letters about billing near other letters about billing. Now you can measure, instantly and almost for free, which pairs are even <em>plausibly</em> about the same thing. That cuts 36,046 pairs down to 1,527.</li>
-      <li><strong>Claude reads the shortlist carefully.</strong> Only those 1,527 promising pairs get shown to the expensive reader, who actually decides "yes, same problem" or "no, just similar words".</li>
+      <li><strong>Voyage sorts the pile roughly.</strong> It reads each letter once and gives it a position — like putting letters about billing near other letters about billing. Now you can measure, instantly and almost for free, which pairs are even <em>plausibly</em> about the same thing. That cuts 28,680 pairs down to 1,400.</li>
+      <li><strong>Claude reads the shortlist carefully.</strong> Only those 1,400 promising pairs get shown to the expensive reader, who actually decides "yes, same problem" or "no, just similar words".</li>
     </ol>
 
     <div class="note">
@@ -268,12 +269,12 @@ flowchart TB
       <pre class="mermaid">
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','tertiaryColor':'#FFFFFF','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
 flowchart LR
-  S1["269 problem<br/>statements"]
+  S1["240 problem<br/>statements"]
   V["<b>VOYAGE</b><br/>turns each sentence<br/>into 1,024 numbers<br/><i>~3 API calls, pennies</i>"]
-  M["<b>LOCAL MATHS</b><br/>compare all 36,046 pairs<br/>keep those above 0.60<br/><i>free, instant</i>"]
-  SHORT["1,527 pairs<br/>worth asking about"]
-  C["<b>CLAUDE</b><br/>reads both statements,<br/>judges same / related / different<br/><i>1,527 calls</i>"]
-  OUT["188 'same issue'<br/>verdicts"]
+  M["<b>LOCAL MATHS</b><br/>compare all 28,680 pairs<br/>keep those above 0.60<br/><i>free, instant</i>"]
+  SHORT["1,400 pairs<br/>worth asking about"]
+  C["<b>CLAUDE</b><br/>reads both statements,<br/>judges same / related / different<br/><i>1,400 calls</i>"]
+  OUT["170 'same issue'<br/>verdicts"]
 
   S1 --> V --> M --> SHORT --> C --> OUT
 
@@ -282,7 +283,7 @@ flowchart LR
   style C fill:#E4EDF6,stroke:#2D6CA8,color:#1B2224
   style M fill:#EDF0ED,stroke:#9AA3A0,color:#1B2224
       </pre>
-      <figcaption><b>Figure 2 — Why two services.</b> Voyage narrows 36,046 possibilities to 1,527. Claude makes the actual call on those. Without the first pass, the second would be 24× more expensive.</figcaption>
+      <figcaption><b>Figure 2 — Why two services.</b> Voyage narrows 28,680 possibilities to 1,400. Claude makes the actual call on those. Without the first pass, the second would be 20× more expensive.</figcaption>
     </figure>
 
     <div class="note guard">
@@ -400,18 +401,18 @@ flowchart TB
       <pre class="mermaid">
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'12px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','tertiaryColor':'#FFFFFF','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
 flowchart TB
-  X0["escalations-365d-2026-08-12.json<br/><i>644 threads</i>"]
-  X1["extractions-365d-2026-08-14.json<br/><i>644 structured records</i>"]
+  X0["escalations-365d-2026-08-12.json<br/><i>600 threads</i>"]
+  X1["extractions-365d-2026-08-14.json<br/><i>600 structured records</i>"]
 
-  Y1["embeddings-365d-*.json<br/><i>269 vectors</i>"]
-  Y2["adjudications-365d-*.json<br/><i>1,527 verdicts</i>"]
-  Y3["groups-365d-v2-*.json<br/><i>44 groups</i>"]
+  Y1["embeddings-365d-*.json<br/><i>240 vectors</i>"]
+  Y2["adjudications-365d-*.json<br/><i>1,400 verdicts</i>"]
+  Y3["groups-365d-v2-*.json<br/><i>40 groups</i>"]
   Y4["report-365d-v2-*.json"]
   Y5["recommendations-365d-*.json"]
 
-  Z1["workflow-embeddings-365d-*.json<br/><i>314 vectors</i>"]
-  Z2["workflow-adjudications-365d-*.json<br/><i>306 verdicts</i>"]
-  Z3["workflow-clusters-365d-v2-*.json<br/><i>31 recurring + 221 singleton</i>"]
+  Z1["workflow-embeddings-365d-*.json<br/><i>280 vectors</i>"]
+  Z2["workflow-adjudications-365d-*.json<br/><i>290 verdicts</i>"]
+  Z3["workflow-clusters-365d-v2-*.json<br/><i>28 recurring + 200 singleton</i>"]
   Z4["workflow-recommendations-365d-*.json"]
 
   W1["review-365d-2026-08-14.json"]
@@ -502,20 +503,20 @@ flowchart TB
       <thead><tr><th>Stage</th><th>Service</th><th class="num">Calls</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td>Fetch</td><td>Slack</td><td class="num">~700</td><td>one per thread for replies</td></tr>
-        <tr><td>Extract</td><td>Anthropic</td><td class="num">347</td><td>297 reused from the 180-day run</td></tr>
-        <tr><td>Embed — technical</td><td>Voyage</td><td class="num">3</td><td>269 sentences, batched 128</td></tr>
+        <tr><td>Extract</td><td>Anthropic</td><td class="num">340</td><td>260 reused from the 180-day run</td></tr>
+        <tr><td>Embed — technical</td><td>Voyage</td><td class="num">3</td><td>240 sentences, batched 128</td></tr>
         <tr><td>Embed — workflow</td><td>Voyage</td><td class="num">2</td><td>142 vectors reused</td></tr>
-        <tr><td>Adjudicate — technical</td><td>Anthropic</td><td class="num">1,527</td><td>largest single cost</td></tr>
-        <tr><td>Adjudicate — workflow</td><td>Anthropic</td><td class="num">306</td><td></td></tr>
-        <tr><td>Recommend — technical</td><td>Anthropic</td><td class="num">44</td><td>one per recurring group</td></tr>
-        <tr><td>Recommend — workflow</td><td>Anthropic</td><td class="num">31</td><td>recurring clusters only</td></tr>
+        <tr><td>Adjudicate — technical</td><td>Anthropic</td><td class="num">1,400</td><td>largest single cost</td></tr>
+        <tr><td>Adjudicate — workflow</td><td>Anthropic</td><td class="num">290</td><td></td></tr>
+        <tr><td>Recommend — technical</td><td>Anthropic</td><td class="num">40</td><td>one per recurring group</td></tr>
+        <tr><td>Recommend — workflow</td><td>Anthropic</td><td class="num">28</td><td>recurring clusters only</td></tr>
         <tr><td>Group, cluster, report, review, preview</td><td>—</td><td class="num">0</td><td>fully local</td></tr>
         <tr><td>Publish</td><td>Slack</td><td class="num">5</td><td>1 parent + 4 replies</td></tr>
       </tbody>
     </table>
     </div>
 
-    <p>Total: roughly <strong>2,255 Anthropic calls</strong> on <code>claude-haiku-4-5</code> and <strong>5 Voyage calls</strong>. The embedding step is almost free and saves roughly 24× on the adjudication step by narrowing 36,046 pairs to 1,527.</p>
+    <p>Total: roughly <strong>2,255 Anthropic calls</strong> on <code>claude-haiku-4-5</code> and <strong>5 Voyage calls</strong>. The embedding step is almost free and saves roughly 20× on the adjudication step by narrowing 28,680 pairs to 1,400.</p>
 
     <div class="note guard">
       <span class="note-label">Rate limits to know about</span>

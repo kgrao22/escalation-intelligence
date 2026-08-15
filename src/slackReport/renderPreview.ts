@@ -120,10 +120,20 @@ export function joinReportAndRecommendations(
   return { joined, omittedGroupIds };
 }
 
+/**
+ * Human-readable label for the channel that was analysed. Deliberately not
+ * hardcoded: the channel name is deployment-specific, and baking a real one
+ * into source would publish it to anyone reading the repository. Callers pass
+ * their own; the default keeps the sentence grammatical without naming anything.
+ */
+export const DEFAULT_SOURCE_CHANNEL_LABEL = "the escalations channel";
+
 export interface OverviewInputs {
   sourceWindowDays?: number;
   /** Total technical escalations analysed; omitted from the report when unknown. */
   totalTechnicalEscalations?: number;
+  /** Channel label for the summary line. Defaults to a generic phrase. */
+  sourceChannelLabel?: string;
 }
 
 export function renderOverview(joined: JoinedIssue[], inputs: OverviewInputs): string {
@@ -159,7 +169,7 @@ export function renderOverview(joined: JoinedIssue[], inputs: OverviewInputs): s
   return [
     `*Escalation Intelligence — ${windowLabel}*`,
     "",
-    `Analysed ${windowPhrase} of #escalations-technology.`,
+    `Analysed ${windowPhrase} of ${inputs.sourceChannelLabel ?? DEFAULT_SOURCE_CHANNEL_LABEL}.`,
     "",
     ...bullets,
     "",

@@ -78,7 +78,7 @@ function review(overrides: Partial<ReviewArtifact> = {}): ReviewArtifact {
         {
           name: "Multiple Stripe customer records", occurrenceCount: 4, openOccurrences: 2,
           fullyResolved: false, peakSeverity: "high",
-          affectedSystems: ["Stripe integration", "Stripe integration, payment processing", "Renewal Flow"],
+          affectedSystems: ["Payments integration", "Payments integration, payment processing", "Billing Flow"],
           remediation: "Deduplicate at customer creation and establish a canonical Stripe mapping.",
           evidenceLinks: LINKS,
         },
@@ -233,8 +233,8 @@ describe("preview structure", () => {
   });
 
   it("collapses near-duplicate system names for readability only", () => {
-    expect(formatSystems(["Stripe integration", "Stripe integration, payment processing", "Renewal Flow"])).toBe(
-      "Stripe integration, payment processing · Renewal Flow",
+    expect(formatSystems(["Payments integration", "Payments integration, payment processing", "Billing Flow"])).toBe(
+      "Payments integration, payment processing · Billing Flow",
     );
   });
 

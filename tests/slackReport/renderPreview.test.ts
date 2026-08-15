@@ -145,10 +145,10 @@ describe("renderSlackReportPreview — overview", () => {
   const report = reportOutput([
     {
       groupId: "grp_a",
-      name: "Policy cancellation state not fully synchronized across backend systems",
+      name: "Record archival state sync failure",
       members: [member({ resolutionStatus: "workaround" }), member({ rootTs: "b", resolutionStatus: "workaround" })],
     },
-    { groupId: "grp_b", name: "Invoice GST calculation omits GST for certain fee components" },
+    { groupId: "grp_b", name: "Invoice tax calculation omits fee components" },
   ]);
   const recs = recommendationsOutput([
     recommendation("grp_a", { automationOpportunity: "high" }),
@@ -158,7 +158,7 @@ describe("renderSlackReportPreview — overview", () => {
   it("includes the analysis window and headline metrics", () => {
     const { overview } = renderSlackReportPreview(report, recs);
     expect(overview.text).toContain("*Escalation Intelligence — 90 Day Review*");
-    expect(overview.text).toContain("Analysed 90 days of #escalations-technology.");
+    expect(overview.text).toContain("Analysed 90 days of the escalations channel.");
     expect(overview.text).toContain("2 confirmed recurring issue patterns");
     expect(overview.text).toContain("4 occurrences across those patterns");
     expect(overview.text).toContain("1 recurring issue still have open/workaround occurrences");
@@ -172,10 +172,10 @@ describe("renderSlackReportPreview — overview", () => {
     ).toContain("70 technical escalations identified");
   });
 
-  it("renders a compact ranked list using short display names", () => {
+  it("renders a compact ranked list, passing names through when no short form is configured", () => {
     const { overview } = renderSlackReportPreview(report, recs);
-    expect(overview.text).toContain("1. 🔴 Policy cancellation state sync — 2 occurrences");
-    expect(overview.text).toContain("2. 🟢 Invoice GST calculation — 2 occurrences");
+    expect(overview.text).toContain("1. 🔴 Record archival state sync failure — 2 occurrences");
+    expect(overview.text).toContain("2. 🟢 Invoice tax calculation omits fee components — 2 occurrences");
   });
 
   it("does not include full recommendations in the overview", () => {
@@ -194,7 +194,7 @@ describe("renderSlackReportPreview — issue detail", () => {
   const baseReport = reportOutput([
     {
       groupId: "grp_a",
-      name: "Invoice GST calculation omits GST for certain fee components",
+      name: "Invoice tax calculation omits fee components",
       members: [
         member({ permalink: "https://slack.example/p1", resolutionStatus: "workaround" }),
         member({ rootTs: "b", permalink: "https://slack.example/p2", resolutionStatus: "unresolved" }),
@@ -206,7 +206,7 @@ describe("renderSlackReportPreview — issue detail", () => {
     const preview = renderSlackReportPreview(baseReport, recommendationsOutput([recommendation("grp_a")]));
     const text = preview.issues[0]!.text;
 
-    expect(text).toContain("*1. Invoice GST calculation* 🔴");
+    expect(text).toContain("*1. Invoice tax calculation omits fee components* 🔴");
     expect(text).toContain("2 occurrences · High priority · Automation: High");
   });
 

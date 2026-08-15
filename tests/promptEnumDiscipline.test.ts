@@ -65,6 +65,6 @@ describe("prompt enum discipline", () => {
 
   it("keeps the version at v3 so prior successes stay reusable, tracking the revision separately", () => {
     expect(ESCALATION_EXTRACTION_PROMPT_VERSION).toBe("v3");
-    expect(ESCALATION_EXTRACTION_PROMPT_REVISION).toBe("v3.1");
+    expect(ESCALATION_EXTRACTION_PROMPT_REVISION).toBe("v3.2");
   });
 });

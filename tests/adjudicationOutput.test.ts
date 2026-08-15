@@ -25,7 +25,7 @@ function result(pairId: string, overrides: Partial<AdjudicationResultItem> = {})
     relationship: "same_underlying_issue",
     confidence: 0.9,
     reasoning: "Same defect.",
-    proposedRecurringIssueName: "Incorrect GST calculation on invoice fee components",
+    proposedRecurringIssueName: "Incorrect tax calculation on invoice fee components",
     ...overrides,
   };
 }

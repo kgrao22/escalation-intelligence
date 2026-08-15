@@ -100,14 +100,14 @@ describe("checkChannelAccess", () => {
       getChannelInfo: () =>
         Promise.resolve({
           ok: true,
-          channel: { name: "escalations-technology", is_member: true },
+          channel: { name: "escalations", is_member: true },
         } as ConversationsInfoResponse),
     });
     const result = await checkChannelAccess(client, "C0SOURCE0000");
     expect(result).toEqual({
       channelId: "C0SOURCE0000",
       ok: true,
-      name: "escalations-technology",
+      name: "escalations",
       isMember: true,
     });
   });

@@ -139,7 +139,7 @@ describe("scrubIdentifiers", () => {
   });
 
   it("leaves ordinary technical prose untouched", () => {
-    const text = "GST is omitted for broker and platform fee components on invoices";
+    const text = "Tax is omitted for partner and platform fee components on invoices";
     const result = scrubIdentifiers(text);
     expect(result.text).toBe(text);
     expect(result.redactionCount).toBe(0);

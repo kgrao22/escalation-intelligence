@@ -15,8 +15,8 @@ import {
 const sameVerdict: RecurrenceAdjudicationLLMOutput = {
   relationship: "same_underlying_issue",
   confidence: 0.9,
-  reasoning: "Both are the same GST calculation defect.",
-  proposedRecurringIssueName: "Incorrect GST calculation on invoice fee components",
+  reasoning: "Both are the same tax calculation defect.",
+  proposedRecurringIssueName: "Incorrect tax calculation on invoice fee components",
 };
 
 describe("RecurrenceAdjudicationLLMOutputSchema", () => {
@@ -114,13 +114,13 @@ describe("issue-name invariant", () => {
   it("does not mutate its input", () => {
     const input = { ...sameVerdict, relationship: "different" as const };
     enforceIssueNameInvariant(input);
-    expect(input.proposedRecurringIssueName).toBe("Incorrect GST calculation on invoice fee components");
+    expect(input.proposedRecurringIssueName).toBe("Incorrect tax calculation on invoice fee components");
   });
 });
 
 describe("RECURRENCE_ADJUDICATION_SYSTEM_PROMPT", () => {
   it("is version v1", () => {
-    expect(RECURRENCE_ADJUDICATION_PROMPT_VERSION).toBe("v1");
+    expect(RECURRENCE_ADJUDICATION_PROMPT_VERSION).toBe("v2");
   });
 
   it("defines all three relationships", () => {
@@ -131,7 +131,7 @@ describe("RECURRENCE_ADJUDICATION_SYSTEM_PROMPT", () => {
 
   it("instructs conservatism and lists the shared-domain traps", () => {
     expect(RECURRENCE_ADJUDICATION_SYSTEM_PROMPT).toContain("BE CONSERVATIVE");
-    for (const trap of ["payments", "renewals", "dashboards", "endorsements", "quote generation"]) {
+    for (const trap of ["payments", "notifications", "dashboards", "amendments", "record creation"]) {
       expect(RECURRENCE_ADJUDICATION_SYSTEM_PROMPT).toContain(trap);
     }
   });

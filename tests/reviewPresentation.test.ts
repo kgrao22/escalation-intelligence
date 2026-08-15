@@ -84,57 +84,57 @@ describe("truncateForSlack — abbreviation safety", () => {
 
 describe("normalizeSystemLabels", () => {
   it("removes exact and case-insensitive duplicates", () => {
-    expect(normalizeSystemLabels(["Stripe integration", "Stripe integration", "stripe INTEGRATION"])).toEqual([
-      "Stripe integration",
+    expect(normalizeSystemLabels(["Payments integration", "Payments integration", "payments INTEGRATION"])).toEqual([
+      "Payments integration",
     ]);
   });
 
   it("normalises whitespace", () => {
-    expect(normalizeSystemLabels(["  Renewal   Flow ", "Renewal Flow"])).toEqual(["Renewal Flow"]);
+    expect(normalizeSystemLabels(["  Billing   Flow ", "Billing Flow"])).toEqual(["Billing Flow"]);
   });
 
   it("collapses a substring variant, keeping the more specific label", () => {
-    expect(normalizeSystemLabels(["Stripe integration", "Stripe integration / payment marking system"])).toEqual([
-      "Stripe integration / payment marking system",
+    expect(normalizeSystemLabels(["Payments integration", "Payments integration / payment marking system"])).toEqual([
+      "Payments integration / payment marking system",
     ]);
   });
 
   it("collapses comma and slash variants of the same system", () => {
     const result = normalizeSystemLabels([
-      "Stripe integration",
-      "Stripe integration, payment processing",
-      "Stripe integration / payment marking system",
+      "Payments integration",
+      "Payments integration, payment processing",
+      "Payments integration / payment marking system",
     ]);
-    expect(result).not.toContain("Stripe integration");
+    expect(result).not.toContain("Payments integration");
     expect(result.length).toBeLessThan(3);
   });
 
   it("collapses reordered wording that plain substring matching would miss", () => {
-    // "Stripe integration" is not a substring of the longer label, but its
+    // "Payments integration" is not a substring of the longer label, but its
     // significant tokens are a subset.
     expect(
-      normalizeSystemLabels(["Stripe integration", "Payment processing integration with Stripe"]),
-    ).toEqual(["Payment processing integration with Stripe"]);
+      normalizeSystemLabels(["Gateway integration", "Payment processing integration with the gateway"]),
+    ).toEqual(["Payment processing integration with the gateway"]);
   });
 
   it("keeps genuinely distinct systems", () => {
-    const result = normalizeSystemLabels(["Renewal Flow", "Intercom integration", "Policy database"]);
+    const result = normalizeSystemLabels(["Billing Flow", "Helpdesk integration", "Records database"]);
     expect(result).toHaveLength(3);
   });
 
   it("prefers the most specific label when token sets are equal", () => {
-    expect(normalizeSystemLabels(["Stripe payment", "payment Stripe integration extra"])).toEqual([
-      "payment Stripe integration extra",
+    expect(normalizeSystemLabels(["Gateway payment", "payment Gateway integration extra"])).toEqual([
+      "payment Gateway integration extra",
     ]);
   });
 
   it("orders deterministically regardless of input order", () => {
-    const input = ["Renewal Flow", "Intercom integration", "Policy database", "Dashboard"];
+    const input = ["Billing Flow", "Helpdesk integration", "Records database", "Dashboard"];
     expect(normalizeSystemLabels(input)).toEqual(normalizeSystemLabels([...input].reverse()));
   });
 
   it("invents no labels: every survivor came from the source", () => {
-    const input = ["Stripe integration", "Stripe integration, payment processing", "Renewal Flow"];
+    const input = ["Payments integration", "Payments integration, payment processing", "Billing Flow"];
     for (const label of normalizeSystemLabels(input)) {
       expect(input.map((s) => s.trim())).toContain(label);
     }
@@ -158,17 +158,17 @@ describe("formatSystems", () => {
   });
 
   it("omits the suffix when three or fewer remain", () => {
-    expect(formatSystems(["Renewal Flow", "Policy database"])).toBe(`Policy database${SYSTEM_SEPARATOR}Renewal Flow`);
-    expect(formatSystems(["Renewal Flow", "Policy database"])).not.toContain("more");
+    expect(formatSystems(["Billing Flow", "Records database"])).toBe(`Billing Flow${SYSTEM_SEPARATOR}Records database`);
+    expect(formatSystems(["Billing Flow", "Records database"])).not.toContain("more");
   });
 
   it("counts the remainder AFTER collapsing duplicates", () => {
     // Four labels, two of which collapse into one, leaves three — no suffix.
     const result = formatSystems([
-      "Stripe integration",
-      "Stripe integration, payment processing",
-      "Renewal Flow",
-      "Policy database",
+      "Payments integration",
+      "Payments integration, payment processing",
+      "Billing Flow",
+      "Records database",
     ]);
     expect(result).not.toContain("more");
     // Split on the middot: labels may themselves contain commas.
@@ -187,16 +187,16 @@ describe("formatSystems", () => {
 
   it("cleans up the real noisy Stripe list from the 180-day report", () => {
     const real = [
-      "Payment processing integration with Stripe",
-      "Renewal Flow",
-      "Stripe integration",
-      "Stripe integration / payment marking system",
-      "Stripe integration, payment processing",
+      "Payment processing integration with the gateway",
+      "Billing Flow",
+      "Payments integration",
+      "Payments integration / payment marking system",
+      "Payments integration, payment processing",
     ];
     const result = formatSystems(real);
     expect(result).not.toBe(real.join(SYSTEM_SEPARATOR));
-    // Bare "Stripe integration" is subsumed by the more specific variants.
-    expect(result.split(SYSTEM_SEPARATOR).map((s) => s.replace(/ \+\d+ more$/, ""))).not.toContain("Stripe integration");
+    // Bare "Payments integration" is subsumed by the more specific variants.
+    expect(result.split(SYSTEM_SEPARATOR).map((s) => s.replace(/ \+\d+ more$/, ""))).not.toContain("Payments integration");
     expect(result.length).toBeLessThan(real.join(SYSTEM_SEPARATOR).length);
   });
 });

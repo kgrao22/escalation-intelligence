@@ -13,5 +13,9 @@ data/
 .env.local
 .env.*.local
 
+# Deployment-specific report presentation. Keys are real recurring-issue names
+# produced against your own data — see display-names.example.json.
+display-names.local.json
+
 .DS_Store
 *.log

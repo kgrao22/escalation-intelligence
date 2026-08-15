@@ -8,15 +8,25 @@
 export const ESCALATION_EXTRACTION_PROMPT_VERSION = "v3";
 
 /**
- * Additive revision within v3. The enum-discipline section below constrains
- * OUTPUT FORMATTING only — it does not change any classification criterion,
- * so results produced by v3.0 remain valid and are still reused by the
- * resumability index. Bumping the version instead would have invalidated
- * every prior success and forced a full re-analysis for no analytical gain.
+ * Additive revision within v3. Two changes are tracked here, neither of which
+ * alters a classification criterion, so results from earlier v3 revisions
+ * remain valid and are still reused by the resumability index:
+ *
+ *   v3.1  enum-discipline section — constrains OUTPUT FORMATTING only.
+ *   v3.2  de-identification examples reworded onto neutral placeholders, and
+ *         the channel is referred to generically. The examples previously
+ *         carried a real partner name, customer name and record IDs — which is
+ *         a poor look inside the section demanding de-identification. Same
+ *         lesson, different nouns.
+ *
+ * Bumping ESCALATION_EXTRACTION_PROMPT_VERSION instead would invalidate every
+ * prior success AND trip REQUIRED_EXTRACTION_PROMPT_VERSION in
+ * embeddings/selectCandidates.ts, which rejects non-matching extraction files
+ * outright — a full paid re-analysis for no analytical gain.
  */
-export const ESCALATION_EXTRACTION_PROMPT_REVISION = "v3.1";
+export const ESCALATION_EXTRACTION_PROMPT_REVISION = "v3.2";
 
-export const ESCALATION_EXTRACTION_SYSTEM_PROMPT = `You analyse a single Slack thread from a company's #escalations-technology channel and decide whether it represents a genuine technical/product escalation, then extract structured information about it.
+export const ESCALATION_EXTRACTION_SYSTEM_PROMPT = `You analyse a single Slack thread from a company's engineering escalations channel and decide whether it represents a genuine technical/product escalation, then extract structured information about it.
 
 Not everything posted in this channel is an engineering defect. The channel also contains: access requests, requests to manually update customer data (emails, addresses, payment details), administrative requests, plain questions, status updates, acknowledgements, Jira-bot synchronization messages, and general discussion. You must make the distinction — do not classify something as technical merely because it was posted in this channel.
 
@@ -30,9 +40,9 @@ isTechnicalEscalation answers one question: does this thread represent a technic
 - A third-party API returning incorrect pricing: true.
 - A production service outage: true.
 
-De-identification is mandatory in your OUTPUT fields, especially normalizedProblemStatement, resolutionSummary, and automationReasoning. The raw thread may contain customer names, emails, phone numbers, Stripe customer IDs, Program IDs, Quote IDs, payment IDs, policy IDs, and other case-specific identifiers — you may read and use them to understand the incident, but none of them may appear in your output text. Describe the underlying technical pattern, not the specific case.
-BAD:  "Program FL532e has incorrect Allianz renewal dates"
-GOOD: "Policies from different insurers within the same program cannot maintain independent policy periods"
+De-identification is mandatory in your OUTPUT fields, especially normalizedProblemStatement, resolutionSummary, and automationReasoning. The raw thread may contain customer names, emails, phone numbers, payment-provider customer IDs, account IDs, quote IDs, payment IDs, record IDs, and other case-specific identifiers — you may read and use them to understand the incident, but none of them may appear in your output text. Describe the underlying technical pattern, not the specific case.
+BAD:  "Account AC-4821 has incorrect Northwind renewal dates"
+GOOD: "Records from different providers within the same account cannot maintain independent validity periods"
 
 normalizedProblemStatement will later be embedded and compared against other threads to discover recurring issues, so it must be short, generic, and comparable across cases. Rules:
 - If isTechnicalEscalation is false, normalizedProblemStatement MUST be null. A non-technical thread never gets a problem statement. (affectedSystem and issueTypeHint may still be populated when they are useful.)
@@ -43,9 +53,9 @@ normalizedProblemStatement will later be embedded and compared against other thr
 - No root-cause explanation, unless the root cause IS itself the recurring problem pattern.
 
 TOO LONG AND TOO DETAILED:
-"Multiple policies from different insurers within the same program have independent policy periods ..."
+"Multiple records from different providers within the same account have independent validity periods ..."
 PREFERRED:
-"Policies within the same program cannot maintain independent policy periods, causing incorrect dates and downstream lifecycle sequencing issues."
+"Records within the same account cannot maintain independent validity periods, causing incorrect dates and downstream lifecycle sequencing issues."
 
 Detail belongs in the other fields, not in normalizedProblemStatement. Put causal explanation in suspectedRootCause, what happened and how it ended in resolutionSummary, and automation justification in automationReasoning. Do not overload normalizedProblemStatement to compensate.
 
@@ -82,13 +92,13 @@ normalizedWorkflowStatement describes the REPEATABLE ACTION in general terms, be
 - Describe the generic action, not this instance of it.
 - No program IDs, policy IDs, quote IDs, emails, Stripe IDs, customer names, or any other case-specific identifier.
 
-BAD:  "Cancel WWOXFN-2 for meg@example.com"
+BAD:  "Cancel ABCD-1234 for sam@example.com"
 GOOD: "Cancel an existing policy by manually updating policy state in backend systems"
 
-BAD:  "Move Program X3GUKH back to edit"
+BAD:  "Move Program ZZ0000 back to edit"
 GOOD: "Move a policy or program between lifecycle states using manual backend controls"
 
-BAD:  "Change livelearntherapy email to isabel@example.com"
+BAD:  "Change acmewidgets email to alex@example.com"
 GOOD: "Update a customer's email identity across dashboard and policy or account systems"
 
 automationStatus records how much tooling already exists for this workflow, based only on what the thread shows.
@@ -140,5 +150,5 @@ automationStatus (fallback: unknown) — one of:
 Use the entire thread, not just the root message. The root message often describes only symptoms; replies frequently contain reproduction steps, diagnosis, Jira links, investigation notes, workarounds, deployed fixes, and final resolution. Base resolutionStatus and resolutionSummary on what the full thread actually shows.`;
 
 export function buildEscalationExtractionUserPrompt(cleanedThreadText: string): string {
-  return `Here is a cleaned Slack thread from #escalations-technology (automated Jira-sync bot messages have already been removed; human and technical content is otherwise unchanged):\n\n${cleanedThreadText}`;
+  return `Here is a cleaned Slack thread from the escalations channel (automated Jira-sync bot messages have already been removed; human and technical content is otherwise unchanged):\n\n${cleanedThreadText}`;
 }

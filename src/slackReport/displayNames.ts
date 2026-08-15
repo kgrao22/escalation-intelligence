@@ -1,9 +1,19 @@
+import fs from "node:fs";
+import path from "node:path";
+
 /**
  * Short display names for Slack.
  *
  * The persisted group names come from adjudication and are written for
  * precision, not for a Slack headline — several run to 15+ words. These are
  * hand-written short forms keyed by the exact persisted name.
+ *
+ * The mapping is DEPLOYMENT-SPECIFIC and is deliberately not stored in this
+ * repository: the keys are the real recurring-issue names produced against
+ * whatever data the pipeline was pointed at, and committing them would publish
+ * an organisation's defect list to anyone who reads the source. Supply your own
+ * in a git-ignored `display-names.local.json` at the repository root — see
+ * `display-names.example.json` for the shape.
  *
  * Persisted names are never modified; this is a presentation-only lookup.
  *
@@ -12,37 +22,66 @@
  * ("Overly strict document validation blocks email delivery for valid…"),
  * which is worse in a report people act on than a name that is merely long.
  */
-const DISPLAY_NAME_BY_PERSISTED_NAME: ReadonlyMap<string, string> = new Map([
-  ["Policy cancellation state not fully synchronized across backend systems", "Policy cancellation state sync"],
-  [
-    "Overly strict document validation blocks email delivery for valid transactions missing insurer-unavailable documents",
-    "Policy document validation blocks email",
-  ],
-  ["Payment link expiration before renewal due date processing window", "Renewal payment link expiry"],
-  ["Email synchronization failure to downstream CRM and case management systems", "Email → CRM sync failure"],
-  ["Missing automatic quote ID generation in endorsement processing workflow", "Endorsement quote ID generation"],
-  [
-    "Policy documents email sent without required attachments due to race condition in document upload workflow",
-    "Policy document delivery race condition",
-  ],
-  ["Invoice GST calculation omits GST for certain fee components", "Invoice GST calculation"],
-  // Alternate phrasings the adjudicator proposed for the same clusters, so a
-  // re-run that picks a different highest-confidence name still shortens.
-  ["Policy cancellation status not synchronized across system boundaries", "Policy cancellation state sync"],
-  [
-    "Policy cancellation state not properly synchronized in backend, blocking repurchase",
-    "Policy cancellation state sync",
-  ],
-]);
+
+/** Repository-root file consulted when no explicit path is given. */
+export const DISPLAY_NAMES_FILENAME = "display-names.local.json";
+
+function defaultDisplayNamesPath(): string {
+  return path.resolve(process.cwd(), DISPLAY_NAMES_FILENAME);
+}
+
+/**
+ * Reads a persisted-name → short-name mapping from disk.
+ *
+ * Every failure mode — file absent, unreadable, malformed JSON, wrong shape —
+ * degrades to an empty map rather than throwing. Shortening a headline is a
+ * presentation nicety, and it must never be able to fail a publication run that
+ * is otherwise correct. Non-string values are skipped individually so one bad
+ * entry cannot discard an otherwise valid file.
+ */
+export function loadShortDisplayNames(filePath: string = defaultDisplayNamesPath()): ReadonlyMap<string, string> {
+  let raw: string;
+  try {
+    raw = fs.readFileSync(filePath, "utf8");
+  } catch {
+    return new Map();
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return new Map();
+  }
+
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return new Map();
+  }
+
+  const entries = new Map<string, string>();
+  for (const [persisted, display] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof display === "string" && persisted.trim() !== "" && display.trim() !== "") {
+      entries.set(persisted, display);
+    }
+  }
+  return entries;
+}
+
+let cached: ReadonlyMap<string, string> | null = null;
+
+function displayNameMap(): ReadonlyMap<string, string> {
+  cached ??= loadShortDisplayNames();
+  return cached;
+}
 
 export function displayNameFor(persistedName: string | null): string {
   if (persistedName === null || persistedName.trim() === "") {
     return "(unnamed recurring issue)";
   }
-  return DISPLAY_NAME_BY_PERSISTED_NAME.get(persistedName) ?? persistedName;
+  return displayNameMap().get(persistedName) ?? persistedName;
 }
 
 /** True when a short form exists; useful for spotting new groups that need one. */
 export function hasShortDisplayName(persistedName: string | null): boolean {
-  return persistedName !== null && DISPLAY_NAME_BY_PERSISTED_NAME.has(persistedName);
+  return persistedName !== null && displayNameMap().has(persistedName);
 }

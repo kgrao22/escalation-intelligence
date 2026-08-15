@@ -15,19 +15,19 @@ const candidate: CandidatePair = {
   a: {
     rootTs: "1.0",
     permalink: "https://slack/1",
-    normalizedProblemStatement: "Invoice GST excludes broker fees",
+    normalizedProblemStatement: "Invoice tax excludes partner fees",
     classification: "technical_defect",
     affectedSystem: "billing",
     issueTypeHint: "calculation",
-    suspectedRootCause: "GST applied before fee components are added",
+    suspectedRootCause: "Tax applied before fee components are added",
     rootCauseConfidence: 0.8,
     resolutionStatus: "resolved",
-    resolutionSummary: "Recalculated GST after fees",
+    resolutionSummary: "Recalculated tax after fees",
   },
   b: {
     rootTs: "2.0",
     permalink: "https://slack/2",
-    normalizedProblemStatement: "Invoice total omits GST for certain fee types",
+    normalizedProblemStatement: "Invoice total omits tax for certain fee types",
     classification: "technical_defect",
     affectedSystem: "billing",
     issueTypeHint: "calculation",
@@ -41,8 +41,8 @@ const candidate: CandidatePair = {
 const sameVerdict: RecurrenceAdjudicationLLMOutput = {
   relationship: "same_underlying_issue",
   confidence: 0.9,
-  reasoning: "Both describe GST omitted from fee components.",
-  proposedRecurringIssueName: "Incorrect GST calculation on invoice fee components",
+  reasoning: "Both describe tax omitted from fee components.",
+  proposedRecurringIssueName: "Incorrect tax calculation on invoice fee components",
 };
 
 const noSleep = () => Promise.resolve();
@@ -57,9 +57,9 @@ describe("adjudicatePair — prompt construction", () => {
     await adjudicatePair(parseFn, "claude-haiku-4-5", candidate);
 
     const prompt = vi.mocked(parseFn).mock.calls[0]?.[0].userPrompt ?? "";
-    expect(prompt).toContain("GST applied before fee components are added");
+    expect(prompt).toContain("Tax applied before fee components are added");
     expect(prompt).toContain("root cause confidence: 0.8");
-    expect(prompt).toContain("Recalculated GST after fees");
+    expect(prompt).toContain("Recalculated tax after fees");
     expect(prompt).toContain("affected system: billing");
   });
 
@@ -76,8 +76,8 @@ describe("adjudicatePair — prompt construction", () => {
     await adjudicatePair(parseFn, "claude-haiku-4-5", candidate);
 
     const prompt = vi.mocked(parseFn).mock.calls[0]?.[0].userPrompt ?? "";
-    expect(prompt).toContain("Invoice GST excludes broker fees");
-    expect(prompt).toContain("Invoice total omits GST for certain fee types");
+    expect(prompt).toContain("Invoice tax excludes partner fees");
+    expect(prompt).toContain("Invoice total omits tax for certain fee types");
   });
 
   it("sends the conservative adjudication system prompt and the requested model", async () => {
@@ -111,7 +111,7 @@ describe("adjudicatePair — relationship handling", () => {
 
   it("keeps the proposed issue name for a SAME verdict", async () => {
     const result = await adjudicatePair(parseFnReturning(sameVerdict), "claude-haiku-4-5", candidate);
-    expect(result.proposedName).toBe("Incorrect GST calculation on invoice fee components");
+    expect(result.proposedName).toBe("Incorrect tax calculation on invoice fee components");
   });
 
   it("strips an issue name from a RELATED verdict", async () => {

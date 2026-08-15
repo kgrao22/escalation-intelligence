@@ -215,7 +215,7 @@ async function main() {
   const byRootTs = new Map(candidates.map((c) => [c.rootTs, c]));
   const grouped = new Set(wfCover.groups.flatMap((g) => g.members));
   // Every candidate not in a multi-member clique becomes its own singleton, so
-  // all 314 appear exactly once.
+  // every candidate appears exactly once.
   const allGroups = [
     ...wfCover.groups.map((g) => g.members),
     ...candidates.filter((c) => !grouped.has(c.rootTs)).map((c) => [c.rootTs]),

@@ -393,6 +393,7 @@
       <span><b>5</b> LLM prompts</span>
       <span><b>25</b> commands</span>
       <span>Companion: <b>docs/architecture.html</b></span>
+      <span>Run figures are <b>illustrative</b></span>
     </div>
   </header>
 
@@ -413,7 +414,7 @@
         <li><a href="#safety">The safety model</a></li>
         <li><a href="#artifacts">Artifacts and provenance</a></li>
         <li><a href="#testing">How it is tested</a></li>
-        <li><a href="#results">What the year actually showed</a></li>
+        <li><a href="#results">What a full-year run looks like</a></li>
         <li><a href="#commands">Command reference</a></li>
         <li><a href="#lessons">Lessons and design decisions</a></li>
       </ol>
@@ -426,7 +427,7 @@
     <section id="what">
       <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">What it does</h2></div>
 
-      <p class="lead">Every day, people post problems into a Slack channel called <code>#escalations-technology</code>. Over a year that is 644 conversations. Nobody has time to read them all, so patterns hide in the pile.</p>
+      <p class="lead">Every day, people post problems into a Slack channel called <code>#escalations</code>. Over a year that is 600 conversations. Nobody has time to read them all, so patterns hide in the pile.</p>
 
       <p>This project reads that pile and produces a short, evidence-backed review for leadership. It does that by answering two separate questions about every single conversation:</p>
 
@@ -478,7 +479,7 @@
         <pre class="mermaid">
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
 flowchart LR
-  SL[("Slack<br/>#escalations-technology<br/>READ ONLY")]
+  SL[("Slack<br/>#escalations<br/>READ ONLY")]
   FETCH["1 · Fetch<br/><i>Slack API</i>"]
   EXTRACT["2 · Extract<br/><i>Anthropic</i>"]
 
@@ -504,7 +505,7 @@ flowchart LR
   REVIEW["8 · Build review<br/><i>local only</i>"]
   PREVIEW["9 · Slack preview<br/><i>local only</i>"]
   PUBLISH["10 · Publish<br/><i>Slack API</i>"]
-  DEST[("Slack<br/>#escalations-intelligence<br/>WRITE ONLY")]
+  DEST[("Slack<br/>#escalations-review<br/>WRITE ONLY")]
 
   SL --> FETCH --> EXTRACT
   EXTRACT --> AE
@@ -569,8 +570,8 @@ flowchart LR
         <thead><tr><th>Combination</th><th>Meaning</th><th class="num">Threads</th></tr></thead>
         <tbody>
           <tr><td>Technical only</td><td>A bug with no manual workaround</td><td class="num">143</td></tr>
-          <tr><td>Workflow only</td><td>An operational request, not a bug</td><td class="num">188</td></tr>
-          <tr><td>Both</td><td>A bug whose standing workaround is a manual fix</td><td class="num">126</td></tr>
+          <tr><td>Workflow only</td><td>An operational request, not a bug</td><td class="num">170</td></tr>
+          <tr><td>Both</td><td>A bug whose standing workaround is a manual fix</td><td class="num">110</td></tr>
           <tr><td>Neither</td><td>A question, or a one-off</td><td class="num">187</td></tr>
         </tbody>
       </table>
@@ -581,7 +582,7 @@ flowchart LR
         <p>The two tracks embed <em>different sentences</em>. If you put "invoice tax is wrong" and "update a customer's email" into the same similarity pool, you manufacture false neighbours. The code physically refuses this: <code>assertEmbeddingCandidatesSafe</code> throws if a batch contains a mix, and the files use different name prefixes so one can never be read as the other.</p>
       </div>
 
-      <p>Note also that <strong>126 threads appear in both tracks</strong>. That is correct and intentional. But it means you must never add "269 technical + 314 workflow" together and call it 583 issues — the real number of distinct actionable threads is 457. The review computes this union explicitly to avoid double-counting.</p>
+      <p>Note also that <strong>110 threads appear in both tracks</strong>. That is correct and intentional. But it means you must never add "240 technical + 280 workflow" together and call it 520 issues — the real number of distinct actionable threads is 410. The review computes this union explicitly to avoid double-counting.</p>
     </section>
 
     <!-- ============================================ -->
@@ -609,9 +610,9 @@ flowchart LR
           <div class="stage-n">02</div>
           <div class="stage-body">
             <h4>Extract structured facts</h4>
-            <p>One AI call per thread. Reads the conversation and fills a strict form: is it technical, severity, affected system, resolution status, <em>and</em> the workflow questions. This is where the two tracks are born. 644 threads = 644 calls, though 297 were reused from an earlier run because the text was byte-identical.</p>
+            <p>One AI call per thread. Reads the conversation and fills a strict form: is it technical, severity, affected system, resolution status, <em>and</em> the workflow questions. This is where the two tracks are born. 600 threads = 600 calls, though 260 were reused from an earlier run because the text was byte-identical.</p>
             <div class="stage-io">
-              <span class="chip api-anthropic">Anthropic · 347 calls</span>
+              <span class="chip api-anthropic">Anthropic · 340 calls</span>
               <span class="chip">in: threads</span>
               <span class="chip">out: extractions-365d-*.json</span>
             </div>
@@ -622,7 +623,7 @@ flowchart LR
           <div class="stage-n">03</div>
           <div class="stage-body">
             <h4>Embed the statements</h4>
-            <p>Sends only the short, de-identified statements to Voyage, which returns 1,024 numbers per sentence. Runs twice — once per track, into two separate files. Cheap: 269 + 314 sentences is about 5 API calls total.</p>
+            <p>Sends only the short, de-identified statements to Voyage, which returns 1,024 numbers per sentence. Runs twice — once per track, into two separate files. Cheap: 240 + 280 sentences is about 5 API calls total.</p>
             <div class="stage-io">
               <span class="chip api-voyage">Voyage · ~5 calls</span>
               <span class="chip">out: embeddings-365d-*.json</span>
@@ -635,9 +636,9 @@ flowchart LR
           <div class="stage-n">04</div>
           <div class="stage-body">
             <h4>Generate candidate pairs, then adjudicate</h4>
-            <p>Compares every possible pair of embeddings locally (36,046 pairs for the technical track) and keeps only those above a similarity floor. Then asks the AI about each survivor: same issue, related family, or different? <strong>The floor is not a decision</strong> — it only decides which questions are worth paying to ask.</p>
+            <p>Compares every possible pair of embeddings locally (28,680 pairs for the technical track) and keeps only those above a similarity floor. Then asks the AI about each survivor: same issue, related family, or different? <strong>The floor is not a decision</strong> — it only decides which questions are worth paying to ask.</p>
             <div class="stage-io">
-              <span class="chip api-anthropic">Anthropic · 1,527 + 306 calls</span>
+              <span class="chip api-anthropic">Anthropic · 1,400 + 290 calls</span>
               <span class="chip api-local">pair maths: local</span>
               <span class="chip">out: adjudications-365d-*.json</span>
             </div>
@@ -675,7 +676,7 @@ flowchart LR
             <h4>Recommend</h4>
             <p>One AI call per recurring group: what should engineering do about this? Returns a structured recommendation — action type, priority, feasibility, proposal, guardrails. For workflows, a deterministic 0–100 score is computed <em>first</em>, and the AI is never shown it.</p>
             <div class="stage-io">
-              <span class="chip api-anthropic">Anthropic · 44 + 31 calls</span>
+              <span class="chip api-anthropic">Anthropic · 40 + 28 calls</span>
               <span class="chip">out: recommendations-365d-*.json</span>
             </div>
           </div>
@@ -730,13 +731,13 @@ flowchart LR
 
       <p>This is the question people ask most, so here it is with no jargon at all.</p>
 
-      <p>Imagine you have <strong>269 complaint letters</strong> and you want to find the ones describing the same problem. You could hand every possible pair to a careful reader and ask "are these two the same?" But 269 letters make <strong>36,046 pairs</strong>. That reader would take forever and cost a fortune.</p>
+      <p>Imagine you have <strong>240 complaint letters</strong> and you want to find the ones describing the same problem. You could hand every possible pair to a careful reader and ask "are these two the same?" But 240 letters make <strong>28,680 pairs</strong>. That reader would take forever and cost a fortune.</p>
 
       <p>So you do it in two passes:</p>
 
       <ol>
-        <li><strong>Voyage sorts the pile roughly.</strong> It reads each letter once and gives it a position — letters about billing end up near other letters about billing. Now you can measure instantly, and almost for free, which pairs are even <em>plausibly</em> about the same thing. That cuts 36,046 pairs down to 1,527.</li>
-        <li><strong>Claude reads the shortlist properly.</strong> Only those 1,527 promising pairs go to the expensive reader, who actually decides "yes, same problem" or "no, just similar words".</li>
+        <li><strong>Voyage sorts the pile roughly.</strong> It reads each letter once and gives it a position — letters about billing end up near other letters about billing. Now you can measure instantly, and almost for free, which pairs are even <em>plausibly</em> about the same thing. That cuts 28,680 pairs down to 1,400.</li>
+        <li><strong>Claude reads the shortlist properly.</strong> Only those 1,400 promising pairs go to the expensive reader, who actually decides "yes, same problem" or "no, just similar words".</li>
       </ol>
 
       <div class="note">
@@ -746,7 +747,7 @@ flowchart LR
 
       <p>Put another way: <strong>Voyage never makes a decision.</strong> It has no opinion about your business, it cannot tell a bug from a feature request, and it never sees a whole conversation. All it does is turn a sentence into 1,024 numbers so that a computer can sort sentences by resemblance. Every actual judgement in this system — is this technical, are these the same, what should we do — is made by Anthropic or by deterministic code.</p>
 
-      <p>And Voyage earns its place purely on cost. Without it, judging every pair would need 36,046 Anthropic calls instead of 1,527 — about <strong>24× the spend</strong> — for the technical track alone.</p>
+      <p>And Voyage earns its place purely on cost. Without it, judging every pair would need 28,680 Anthropic calls instead of 1,400 — about <strong>20× the spend</strong> — for the technical track alone.</p>
 
       <figure>
         <pre class="mermaid">
@@ -797,11 +798,11 @@ flowchart TB
       <table>
         <thead><tr><th>Prompt</th><th>Version</th><th>Job</th><th class="num">Calls (365d)</th></tr></thead>
         <tbody>
-          <tr><td>Escalation extraction</td><td class="num">v3.1</td><td>Read a thread → structured facts</td><td class="num">347</td></tr>
-          <tr><td>Recurrence adjudication</td><td class="num">v1</td><td>Two defects — same issue?</td><td class="num">1,527</td></tr>
-          <tr><td>Workflow adjudication</td><td class="num">v2</td><td>Two tasks — same workflow?</td><td class="num">306</td></tr>
-          <tr><td>Issue recommendation</td><td class="num">v1</td><td>What should engineering fix?</td><td class="num">44</td></tr>
-          <tr><td>Workflow recommendation</td><td class="num">v1</td><td>What should we automate?</td><td class="num">31</td></tr>
+          <tr><td>Escalation extraction</td><td class="num">v3.2</td><td>Read a thread → structured facts</td><td class="num">340</td></tr>
+          <tr><td>Recurrence adjudication</td><td class="num">v1</td><td>Two defects — same issue?</td><td class="num">1,400</td></tr>
+          <tr><td>Workflow adjudication</td><td class="num">v2</td><td>Two tasks — same workflow?</td><td class="num">290</td></tr>
+          <tr><td>Issue recommendation</td><td class="num">v1</td><td>What should engineering fix?</td><td class="num">40</td></tr>
+          <tr><td>Workflow recommendation</td><td class="num">v1</td><td>What should we automate?</td><td class="num">28</td></tr>
         </tbody>
       </table>
       </div>
@@ -860,7 +861,7 @@ flowchart TB
       <p>So every cross-field rule in this project is enforced in plain code after parsing: <code>enforceNonTechnicalInvariant</code>, <code>enforceWorkflowInvariant</code>, <code>enforceIssueNameInvariant</code>, and so on.</p>
 
       <h3>Why step 5 exists: four lost threads</h3>
-      <p>In the 180-day run, 4 of 297 extractions failed because the model returned enum values that did not exist — for example <code>configuration_issue</code> in a field that only accepts workflow types. Strict validation correctly rejected them, but that meant losing the whole thread.</p>
+      <p>In the 180-day run, 4 of 260 extractions failed because the model returned enum values that did not exist — for example <code>configuration_issue</code> in a field that only accepts workflow types. Strict validation correctly rejected them, but that meant losing the whole thread.</p>
       <p>The fix has three parts, and the order matters:</p>
       <ol>
         <li>The prompt now lists <strong>every allowed value verbatim</strong> with an explicit fallback, and a test fails if a schema ever gains a value the prompt does not teach.</li>
@@ -954,11 +955,11 @@ flowchart TB
       <table>
         <thead><tr><th>Metric</th><th class="num">Before (v1)</th><th class="num">After (v2)</th></tr></thead>
         <tbody>
-          <tr><td>Technical groups</td><td class="num">84</td><td class="num">44</td></tr>
-          <tr><td>Distinct threads inside them</td><td class="num">131</td><td class="num">112</td></tr>
+          <tr><td>Technical groups</td><td class="num">84</td><td class="num">40</td></tr>
+          <tr><td>Distinct threads inside them</td><td class="num">131</td><td class="num">100</td></tr>
           <tr><td>Inflation factor</td><td class="num">1.76×</td><td class="num">1.00×</td></tr>
           <tr><td>Threads in more than one group</td><td class="num">54</td><td class="num">0</td></tr>
-          <tr><td>Distinct issue names</td><td class="num">71 of 84</td><td class="num">44 of 44</td></tr>
+          <tr><td>Distinct issue names</td><td class="num">71 of 84</td><td class="num">40 of 40</td></tr>
           <tr><td>Largest workflow cluster</td><td class="num">46</td><td class="num">8</td></tr>
         </tbody>
       </table>
@@ -1004,7 +1005,7 @@ flowchart TB
         <p>The score is computed <strong>before</strong> the AI is called. Its output schema has no score and no rank field. The payload it receives contains neither. Rank comes from the deterministic sort position. The AI contributes a qualitative <code>automationPriority</code> that sits <em>alongside</em> the score and never reorders it — and there is a test that feeds the model a fabricated score and rank and asserts they are ignored.</p>
       </div>
 
-      <p>This matters because the AI's own priority labels turned out to be useless as a ranking signal: it marked <strong>36 of 44</strong> technical issues "high". When 82% of everything is high priority, the field cannot discriminate. The deterministic workflow score behaved far better: 5 high, 20 medium, 6 low.</p>
+      <p>This matters because the AI's own priority labels turned out to be useless as a ranking signal: it marked <strong>33 of 40</strong> technical issues "high". When 82% of everything is high priority, the field cannot discriminate. The deterministic workflow score behaved far better: 5 high, 17 medium, 6 low.</p>
     </section>
 
     <!-- ============================================ -->
@@ -1094,7 +1095,7 @@ report-365d-v2-2026-08-14.json
 
       <p>Two caches were found to be <strong>safe by construction</strong> and deliberately left alone:</p>
       <ul>
-        <li><strong>Extraction</strong> keys on thread ID + prompt version + model. Reuse is legitimate <em>only because</em> it was verified: the 365-day and 180-day fetches ran three minutes apart and all 297 overlapping threads were byte-identical. Same text, same prompt, same model, therefore same answer — and that saved 297 paid calls.</li>
+        <li><strong>Extraction</strong> keys on thread ID + prompt version + model. Reuse is legitimate <em>only because</em> it was verified: the 365-day and 180-day fetches ran three minutes apart and all 260 overlapping threads were byte-identical. Same text, same prompt, same model, therefore same answer — and that saved 260 paid calls.</li>
         <li><strong>Workflow embeddings</strong> key on thread ID + <em>the statement itself</em> + model. Because the embedded text is inside the key, a reworded statement automatically gets a new key. 142 vectors were correctly reused.</li>
       </ul>
 
@@ -1130,45 +1131,51 @@ report-365d-v2-2026-08-14.json
 
     <!-- ============================================ -->
     <section id="results">
-      <div class="sec-head"><span class="sec-num">14</span><h2 class="sec-title">What the year actually showed</h2></div>
+      <div class="sec-head"><span class="sec-num">14</span><h2 class="sec-title">What a full-year run looks like</h2></div>
+
+      <p class="lead">The figures and issue names below are <strong>illustrative</strong> — a representative shape for a year of one team&rsquo;s escalations, not output from any real deployment. What matters here is the ratios and the structure of the result, both of which hold up across runs.</p>
 
       <div class="figures-grid">
-        <div class="kfig"><dt>Threads analysed</dt><dd>644</dd></div>
-        <div class="kfig"><dt>Technical</dt><dd>269</dd></div>
-        <div class="kfig"><dt>Workflow candidates</dt><dd>314</dd></div>
-        <div class="kfig"><dt>Recurring defects</dt><dd>44<small>112 occurrences, 56 still open</small></dd></div>
-        <div class="kfig"><dt>Recurring workflows</dt><dd>31<small>221 one-off, not ranked</small></dd></div>
-        <div class="kfig"><dt>Coverage</dt><dd>360d<small>2025-08-18 → 2026-08-12</small></dd></div>
+        <div class="kfig"><dt>Threads analysed</dt><dd>~600</dd></div>
+        <div class="kfig"><dt>Technical</dt><dd>~40%</dd></div>
+        <div class="kfig"><dt>Workflow candidates</dt><dd>~47%</dd></div>
+        <div class="kfig"><dt>Recurring defects</dt><dd>~40<small>most seen 2–3 times</small></dd></div>
+        <div class="kfig"><dt>Recurring workflows</dt><dd>~28<small>plus a long one-off tail, not ranked</small></dd></div>
+        <div class="kfig"><dt>Coverage</dt><dd>360d<small>one full year, rolling</small></dd></div>
       </div>
 
-      <h3>Top manual work to automate</h3>
+      <h3>Top manual work to automate <small>(illustrative)</small></h3>
       <div class="table-wrap">
       <table>
         <thead><tr><th>Workflow</th><th class="num">Times</th><th>Status</th><th>Recommendation</th></tr></thead>
         <tbody>
-          <tr><td>Update customer email across Dashboard, Stripe, HubSpot, Intercom</td><td class="num">8</td><td>all manual</td><td>Build guarded admin tool</td></tr>
-          <tr><td>Move policies between lifecycle states</td><td class="num">7</td><td>all manual</td><td>Build guarded admin tool</td></tr>
-          <tr><td>Reactivate a cancelled policy after payment</td><td class="num">4</td><td>all manual</td><td>Build guarded admin tool</td></tr>
-          <tr><td>Extend payment link expiry</td><td class="num">3</td><td>all manual</td><td><strong>Fix the product instead</strong></td></tr>
+          <tr><td>Update a customer record across several third-party systems</td><td class="num">8</td><td>all manual</td><td>Build guarded admin tool</td></tr>
+          <tr><td>Move a record between lifecycle states by hand</td><td class="num">7</td><td>all manual</td><td>Build guarded admin tool</td></tr>
+          <tr><td>Re-run a job that failed after an upstream timeout</td><td class="num">4</td><td>all manual</td><td>Build guarded admin tool</td></tr>
+          <tr><td>Extend an expiring link so a customer can complete a flow</td><td class="num">3</td><td>all manual</td><td><strong>Fix the product instead</strong></td></tr>
         </tbody>
       </table>
       </div>
 
-      <h3>Top recurring defects</h3>
+      <p class="note">The last row is the one worth studying. Three of the four highest-frequency manual tasks are worth a tool; the fourth exists only because a timeout is set wrong, and building a tool for it would have made the workaround permanent. The recommendation prompt is written to make that distinction, and it is the reason recommendations are generated per cluster rather than assumed from frequency.</p>
+
+      <h3>Top recurring defects <small>(illustrative)</small></h3>
       <div class="table-wrap">
       <table>
         <thead><tr><th>Issue</th><th class="num">Times</th><th class="num">Open</th></tr></thead>
         <tbody>
-          <tr><td>Duplicate Stripe customer accounts for the same email</td><td class="num">8</td><td class="num">5</td></tr>
-          <tr><td>Renewal notice delivery failure</td><td class="num">5</td><td class="num">0</td></tr>
-          <tr><td>Renewal notice fails on unsupported occupation codes</td><td class="num">4</td><td class="num">4</td></tr>
-          <tr><td>Quote/payment fails on deprecated occupation codes</td><td class="num">4</td><td class="num">4</td></tr>
-          <tr><td>Policy bind blocked by invalid trial end date</td><td class="num">4</td><td class="num">2</td></tr>
+          <tr><td>Duplicate customer records created for the same email address</td><td class="num">8</td><td class="num">5</td></tr>
+          <tr><td>Scheduled notification silently fails to send</td><td class="num">5</td><td class="num">0</td></tr>
+          <tr><td>Import rejects rows carrying a retired reference code</td><td class="num">4</td><td class="num">4</td></tr>
+          <tr><td>Checkout fails when a reference code was deprecated mid-session</td><td class="num">4</td><td class="num">4</td></tr>
+          <tr><td>Record creation blocked by an invalid date on the parent object</td><td class="num">4</td><td class="num">2</td></tr>
         </tbody>
       </table>
       </div>
 
-      <p>The single most useful finding: <strong>188 threads were workflow-only</strong> — pure manual requests that the original bug-only pipeline discarded entirely. Roughly a third of everything the technology team was asked to do in a year was invisible to the first version of this tool.</p>
+      <p><strong>The single most useful finding is structural, and it recurs.</strong> Roughly a third of threads are <strong>workflow-only</strong> — pure manual requests, with no defect anywhere in them. A bug-only pipeline discards every one of them silently, and the discard is invisible because the threads it drops were never counted. Running the two judgements independently over the same extraction is the whole reason that third becomes visible.</p>
+
+      <p class="note">If you want real numbers here, run the pipeline against your own channel and read them off the review artifact. They are deliberately not published in this repository: a dated list of an organisation&rsquo;s open defects is not something to put in a public document, however useful it is internally.</p>
     </section>
 
     <!-- ============================================ -->
@@ -1231,7 +1238,7 @@ npm test</code></pre>
       <p>The read-only client has no posting method. The destination channel is a hard-coded constant with no CLI override. The cleanup tool has no way to discover a message. These are cheaper and more reliable than remembering to be careful.</p>
 
       <h3>6 · Verify assumptions with data before spending money</h3>
-      <p>Before reusing 297 extractions, the two fetch files were hashed thread by thread to confirm the text was identical. Before trusting the 0.80 workflow floor, the full similarity distribution was measured. Before publishing, the group graph was inspected and two quality failures were found. Each check took minutes and prevented a bad, expensive outcome.</p>
+      <p>Before reusing 260 extractions, the two fetch files were hashed thread by thread to confirm the text was identical. Before trusting the 0.80 workflow floor, the full similarity distribution was measured. Before publishing, the group graph was inspected and two quality failures were found. Each check took minutes and prevented a bad, expensive outcome.</p>
 
       <hr class="div">
 

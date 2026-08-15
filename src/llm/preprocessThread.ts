@@ -1,8 +1,8 @@
 import type { EscalationThread } from "../slack/escalationThreads.js";
 
 /**
- * Matches automated Jira-sync bot noise (e.g. "@Krishna created a Task
- * UP-4265 ..." or "synced this conversation thread with the Jira work
+ * Matches automated Jira-sync bot noise (e.g. "@teammate created a Task
+ * ENG-1234 ..." or "synced this conversation thread with the Jira work
  * item ..."). Deliberately narrow: a normal human reply that happens to
  * contain a Jira URL or mentions "Jira" in passing must NOT match — only
  * the bot's own repetitive announcement text should.

@@ -230,7 +230,6 @@ async function main() {
   console.log("LIVE SLACK PUBLICATION ENABLED");
   console.log("");
   console.log("Destination:");
-  console.log("#escalations-intelligence");
   console.log(EXPECTED_DESTINATION_CHANNEL_ID);
   console.log("");
   console.log(`Messages to publish:`);

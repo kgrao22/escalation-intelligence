@@ -42,11 +42,11 @@ certainty.
 
 ## Safety model
 
-- **Source channel (`#escalations-technology`) is strictly read-only.** The
+- **Source channel (`#escalations`) is strictly read-only.** The
   Slack client wrapper (`src/slack/client.ts`) exposes only read methods —
   there is no code path in this repository that can post, edit, react to,
   or otherwise mutate anything in the source channel.
-- **Destination channel (`#escalations-intelligence`) is for report output
+- **Destination channel (`#escalations-review`) is for report output
   only**, and publishing is not implemented yet (a later milestone).
 - **An explicit guard (`src/slack/safety.ts`) refuses to post** if the
   destination channel ID ever matches the source channel ID. The same
@@ -113,8 +113,8 @@ certainty.
    | Variable | Required | Default | Notes |
    |---|---|---|---|
    | `SLACK_BOT_TOKEN` | yes | — | Slack bot token (`xoxb-...`) |
-   | `SLACK_SOURCE_CHANNEL_ID` | yes | — | `#escalations-technology` — read only |
-   | `SLACK_DEST_CHANNEL_ID` | yes | — | `#escalations-intelligence` — report output only |
+   | `SLACK_SOURCE_CHANNEL_ID` | yes | — | `#escalations` — read only |
+   | `SLACK_DEST_CHANNEL_ID` | yes | — | `#escalations-review` — report output only |
    | `SLACK_DAYS_BACK` | no | `30` | Trailing window for later fetch/analysis milestones |
    | `ANTHROPIC_API_KEY` | only for `intelligence:extract` | — | Never logged or printed |
    | `ANTHROPIC_MODEL` | no | `claude-haiku-4-5` | See "Model choice" below |
@@ -291,7 +291,7 @@ npm run intelligence:similarity -- --input=data/intelligence/embeddings-90d-<dat
 
 ### `npm run slack:probe`
 
-Verifies the app can safely read `#escalations-technology`:
+Verifies the app can safely read `#escalations`:
 
 1. Authenticates with `auth.test` and prints the workspace/bot identity.
 2. Confirms both the source and destination channel IDs are accessible.
@@ -354,7 +354,7 @@ npm run intelligence:extract -- --dry-run                                 # prev
 1. Loads the input file (explicit `--input`, or the newest
    `data/slack/escalations-*.json` by filename).
 2. For each thread: strips Jira-sync-bot noise (e.g. "created a Task
-   UP-4265...", "synced this thread with the Jira work item...") while
+   ENG-1234...", "synced this thread with the Jira work item...") while
    keeping ordinary replies — including ones that happen to contain a Jira
    URL — then sends the root message + remaining replies to Claude.
 3. Claude decides `isTechnicalEscalation` and, for genuine technical
@@ -455,11 +455,13 @@ without making any API call. Failures are reported with the offending field:
     1776061159.203769 — invalid enum: workflowClassification
 ```
 
-> **Prompt revision, not version.** The enum-discipline rules added after the
-> 180-day run constrain output *formatting* only — no classification criterion
-> changed — so the prompt stays at `v3` and is tracked as revision `v3.1` in
-> `metadata.promptRevision`. Bumping to `v4` would have invalidated all 293
-> prior successes and forced a full paid re-analysis for no analytical gain.
+> **Prompt revision, not version.** The enum-discipline rules constrain output
+> *formatting* only, and the later de-identification rewording changed example
+> nouns rather than criteria — no classification rule changed — so the prompt
+> stays at `v3` and is tracked as revision `v3.2` in `metadata.promptRevision`.
+> Bumping to `v4` would invalidate every prior success, and
+> `REQUIRED_EXTRACTION_PROMPT_VERSION` would reject the existing extraction
+> files outright, forcing a full paid re-analysis for no analytical gain.
 
 ### `npm run intelligence:workflow-summary` — manual workflow inspection
 
@@ -1118,7 +1120,7 @@ issue's Slack permalinks for later rendering.
 ### `npm run intelligence:slack-preview` — Slack report rendering
 
 Renders the exact messages that will eventually be posted to
-`#escalations-intelligence`, **locally only**. Nothing is sent anywhere.
+`#escalations-review`, **locally only**. Nothing is sent anywhere.
 
 ```bash
 npm run intelligence:slack-preview -- \
@@ -1142,7 +1144,7 @@ CLI warns if any message exceeds 3,000 characters.
 
 **Display names.** Persisted group names are written for precision and several
 run past 15 words. `src/slackReport/displayNames.ts` maps them to short forms
-("Policy cancellation state not fully synchronized across backend systems" →
+("Record archival state sync failure" →
 "Policy cancellation state sync"). Persisted names are never modified. The
 fallback for an unmapped group is the **unchanged name**, not truncation —
 cutting a sentence at N characters produces confident-looking nonsense, which
@@ -1167,7 +1169,7 @@ reference `@slack/web-api`, `WebClient`, `chat.postMessage`, or `chat:write`.
 
 ### `npm run intelligence:slack-publish` — controlled publication
 
-Posts an already-reviewed preview artifact to `#escalations-intelligence`.
+Posts an already-reviewed preview artifact to `#escalations-review`.
 This is the only code in the project that writes to Slack.
 
 **It fails closed.** The default invocation performs zero writes and acts as a
@@ -1190,7 +1192,7 @@ npm run intelligence:slack-publish -- --publish \
 
 **One-time Slack setup.** Add the **`chat:write`** bot token scope to the
 Slack app, then **reinstall the app to the workspace** (scope changes only
-take effect on reinstall) and invite the bot to `#escalations-intelligence`.
+take effect on reinstall) and invite the bot to `#escalations-review`.
 No other write scope is needed — not `chat:write.public`, `files:write`,
 `reactions:write`, or any admin scope.
 

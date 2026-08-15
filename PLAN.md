@@ -10,7 +10,7 @@
 
 ## 1. Problem Statement
 
-The `#escalations-technology` Slack channel (channel ID `C0SOURCE0000`)
+The `#escalations` Slack channel (channel ID `C0SOURCE0000`)
 accumulates a stream of ad-hoc incident reports (e.g. "Vehicle upload failed
 for 300 vehicles", "Bulk fleet upload keeps timing out"). These messages are
 read once, handled, and forgotten. Nobody aggregates them, so:
@@ -21,16 +21,16 @@ read once, handled, and forgotten. Nobody aggregates them, so:
 - There is no data-driven way to prioritize reliability/automation work.
 
 **Goal:** Periodically read recent escalation threads from
-`#escalations-technology`, identify recurring, named problems, score each
+`#escalations`, identify recurring, named problems, score each
 for automation potential, and publish a readable intelligence report to a
-separate channel, `#escalations-intelligence` (channel ID `C0DEST00000`) —
+separate channel, `#escalations-review` (channel ID `C0DEST00000`) —
 without ever writing to the source channel.
 
 ## 2. MVP Scope
 
 The MVP is a **local CLI application** that:
 
-1. Reads real (but read-only) data from `#escalations-technology` via the
+1. Reads real (but read-only) data from `#escalations` via the
    Slack Web API, for a configurable trailing window (default 30 days).
 2. Filters threads down to genuine technical escalations (vs. chit-chat,
    acknowledgements, off-topic messages).
@@ -42,7 +42,7 @@ The MVP is a **local CLI application** that:
 5. Names each cluster via an LLM, and computes frequency/trend and an
    automation-opportunity score per cluster.
 6. Formats a readable report and — only after an explicit **dry run** step
-   the operator reviews — publishes it to `#escalations-intelligence`.
+   the operator reviews — publishes it to `#escalations-review`.
 7. Runs entirely on a developer's MacBook via `npm run intelligence`, with
    no server, database service, or container required for the MVP.
 
@@ -60,8 +60,8 @@ and persistence come in later milestones.
   SQLite files; a proper embedded **SQLite** database is introduced once
   persistence is actually needed (Milestone 6+), not a server-based DB.
 - **No web dashboard.** Output is a formatted Slack message in
-  `#escalations-intelligence`. A dashboard is a later phase.
-- **No writes of any kind to the source channel.** `#escalations-technology`
+  `#escalations-review`. A dashboard is a later phase.
+- **No writes of any kind to the source channel.** `#escalations`
   is production and strictly read-only — no `chat.postMessage`,
   `chat.update`, `reactions.add`, or any mutating call is ever issued
   against it (see §11).
@@ -108,7 +108,7 @@ process:
                             │
                  ┌──────────┴──────────┐
                  ▼                     ▼
-     #escalations-technology   #escalations-intelligence
+     #escalations   #escalations-review
         (C0SOURCE0000)               (C0DEST00000)
         READ ONLY                   REPORT OUTPUT ONLY
 ```
@@ -143,7 +143,7 @@ Key architectural decisions:
    the lightweight connectivity check)
         │
         ▼
-2. Fetch: read top-level messages from #escalations-technology for the
+2. Fetch: read top-level messages from #escalations for the
    configured trailing window, then fetch each thread's replies
    (conversations.history + conversations.replies) — READ ONLY
         │
@@ -180,7 +180,7 @@ Key architectural decisions:
         ▼
 10. Dry run: print/preview the report; only on explicit confirmation
     (flag or prompt) does the app call chat.postMessage against
-    #escalations-intelligence — never against the source channel
+    #escalations-review — never against the source channel
 ```
 
 **This revision implements steps 1–2 only** (fetch, as a connectivity probe
@@ -207,7 +207,7 @@ Cloud Run/Fly.io/Railway, queues, microservices, background workers, a web
 dashboard, cron scheduling, Slack Events API, Socket Mode. All were part of
 the original plan and remain the intended direction for later phases (§14)
 — they are simply not needed to answer the MVP's first question: *can this
-application safely read real messages from `#escalations-technology`?*
+application safely read real messages from `#escalations`?*
 
 ## 7. Proposed Database Schema (Later Phase — Not in Milestone 0/1)
 
@@ -343,7 +343,7 @@ general principles from the original plan:
 
 | When | Account/Credential | Purpose |
 |---|---|---|
-| MVP (now) | **Slack Bot Token** (`SLACK_BOT_TOKEN`, `xoxb-...`) for a Slack app installed in the workspace, scoped to `channels:read` + `channels:history` (or `groups:*` if channels are private) | Read `#escalations-technology`; later, `chat:write` is added for publishing to `#escalations-intelligence` |
+| MVP (now) | **Slack Bot Token** (`SLACK_BOT_TOKEN`, `xoxb-...`) for a Slack app installed in the workspace, scoped to `channels:read` + `channels:history` (or `groups:*` if channels are private) | Read `#escalations`; later, `chat:write` is added for publishing to `#escalations-review` |
 | Later | **Anthropic API key** | LLM normalization, filtering, cluster labeling, automatability scoring |
 | Later | **Embeddings provider API key** (e.g. Voyage AI) | Generating embedding vectors |
 | Later (only if hosted) | Hosting platform account (Fly.io/Railway/Vercel) + managed Postgres | Only once cloud deployment phase begins |
@@ -399,7 +399,7 @@ Implement the scoring formula from §10 with full breakdown per cluster.
 Format a readable Slack-message report (top clusters, scores, trends,
 permalinks). Dry-run mode prints/previews the report without posting.
 
-**Milestone 9 — Guarded publishing to `#escalations-intelligence`**
+**Milestone 9 — Guarded publishing to `#escalations-review`**
 Implement `chat.postMessage` in a dedicated, isolated module carrying the
 source≠destination guard from §11; require an explicit flag/confirmation
 to move from dry-run to actually posting.

@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { displayNameFor, hasShortDisplayName } from "../../src/slackReport/displayNames.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  displayNameFor,
+  hasShortDisplayName,
+  loadShortDisplayNames,
+} from "../../src/slackReport/displayNames.js";
 import {
   automationLabel,
   confidenceLine,
@@ -13,42 +20,78 @@ import {
   statusLine,
 } from "../../src/slackReport/formatters.js";
 
-describe("displayNameFor", () => {
-  it("shortens each of the seven known persisted names", () => {
-    const cases: Array<[string, string]> = [
-      ["Policy cancellation state not fully synchronized across backend systems", "Policy cancellation state sync"],
-      [
-        "Overly strict document validation blocks email delivery for valid transactions missing insurer-unavailable documents",
-        "Policy document validation blocks email",
-      ],
-      ["Payment link expiration before renewal due date processing window", "Renewal payment link expiry"],
-      ["Email synchronization failure to downstream CRM and case management systems", "Email → CRM sync failure"],
-      ["Missing automatic quote ID generation in endorsement processing workflow", "Endorsement quote ID generation"],
-      [
-        "Policy documents email sent without required attachments due to race condition in document upload workflow",
-        "Policy document delivery race condition",
-      ],
-      ["Invoice GST calculation omits GST for certain fee components", "Invoice GST calculation"],
-    ];
+describe("loadShortDisplayNames", () => {
+  const written: string[] = [];
 
-    for (const [persisted, expected] of cases) {
-      expect(displayNameFor(persisted)).toBe(expected);
+  function fixture(contents: string): string {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "display-names-")), "map.json");
+    fs.writeFileSync(file, contents, "utf8");
+    written.push(file);
+    return file;
+  }
+
+  afterEach(() => {
+    for (const file of written.splice(0)) {
+      fs.rmSync(path.dirname(file), { recursive: true, force: true });
     }
   });
 
-  it("keeps short names within roughly 4-9 words", () => {
-    const shortened = displayNameFor(
-      "Overly strict document validation blocks email delivery for valid transactions missing insurer-unavailable documents",
+  it("reads a persisted-name to short-name mapping", () => {
+    const file = fixture(
+      JSON.stringify({
+        "Scheduled export job silently skips records above the batch size limit": "Export batch size limit",
+      }),
     );
-    expect(shortened.split(/\s+/).length).toBeLessThanOrEqual(9);
+    expect(loadShortDisplayNames(file).get("Scheduled export job silently skips records above the batch size limit")).toBe(
+      "Export batch size limit",
+    );
   });
 
-  it("falls back to the unchanged name for an unknown group", () => {
+  it("maps alternate phrasings of one cluster onto the same short form", () => {
+    const file = fixture(
+      JSON.stringify({
+        "Scheduled export job silently skips records above the batch size limit": "Export batch size limit",
+        "Batch export omits records beyond the configured size ceiling": "Export batch size limit",
+      }),
+    );
+    const map = loadShortDisplayNames(file);
+    expect(new Set(map.values())).toEqual(new Set(["Export batch size limit"]));
+  });
+
+  it("returns an empty map when the file is absent", () => {
+    expect(loadShortDisplayNames(path.join(os.tmpdir(), "definitely-not-here-9e3f.json")).size).toBe(0);
+  });
+
+  it("returns an empty map rather than throwing on malformed JSON", () => {
+    expect(loadShortDisplayNames(fixture("{ not json")).size).toBe(0);
+  });
+
+  it("returns an empty map when the root is not an object", () => {
+    expect(loadShortDisplayNames(fixture('["a", "b"]')).size).toBe(0);
+  });
+
+  it("skips non-string entries instead of discarding the whole file", () => {
+    const file = fixture(JSON.stringify({ _comment: ["ignore me"], Real: "Short" }));
+    const map = loadShortDisplayNames(file);
+    expect(map.get("Real")).toBe("Short");
+    expect(map.has("_comment")).toBe(false);
+  });
+
+  it("ships an example file that parses and contains no real issue names", () => {
+    const example = loadShortDisplayNames(path.resolve(process.cwd(), "display-names.example.json"));
+    expect(example.size).toBeGreaterThan(0);
+  });
+});
+
+describe("displayNameFor", () => {
+  // No mapping file is present under test, so every name passes through
+  // unchanged — which is exactly the documented fallback.
+  it("falls back to the unchanged name when no short form is configured", () => {
     const unknown = "Some entirely new recurring issue discovered next quarter";
     expect(displayNameFor(unknown)).toBe(unknown);
   });
 
-  it("never truncates an unknown name mid-sentence", () => {
+  it("never truncates an unmapped name mid-sentence", () => {
     const unknown = "A very long unfamiliar recurring issue name that has no mapping entry at all";
     expect(displayNameFor(unknown)).not.toContain("…");
     expect(displayNameFor(unknown)).toBe(unknown);
@@ -58,8 +101,11 @@ describe("displayNameFor", () => {
     expect(displayNameFor(null)).toBe("(unnamed recurring issue)");
   });
 
+  it("handles a blank name", () => {
+    expect(displayNameFor("   ")).toBe("(unnamed recurring issue)");
+  });
+
   it("reports whether a short form exists", () => {
-    expect(hasShortDisplayName("Invoice GST calculation omits GST for certain fee components")).toBe(true);
     expect(hasShortDisplayName("Unknown issue")).toBe(false);
     expect(hasShortDisplayName(null)).toBe(false);
   });
