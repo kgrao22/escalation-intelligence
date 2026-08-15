@@ -826,7 +826,7 @@ judgment is yours, informed by this evidence.
 ### `npm run intelligence:calibration-review` — threshold calibration workflow
 
 Cosine similarity is useful for *discovering candidate* recurring issues, but
-on real Upcover data it does not by itself decide whether two escalations are
+on real data it does not by itself decide whether two escalations are
 the same underlying engineering issue. This command prepares evidence so that
 decision can be made from human labels rather than guessed.
 
