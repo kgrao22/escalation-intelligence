@@ -1,0 +1,526 @@
+<title>Escalation Intelligence — Architecture</title>
+
+<style>
+  :root {
+    --paper:        #FAFAF7;
+    --surface:      #FFFFFF;
+    --surface-2:    #F2F3F1;
+    --ink:          #171C1E;
+    --ink-soft:     #414B4C;
+    --ink-muted:    #6B7674;
+    --rule:         #DDE0DC;
+    --rule-strong:  #C3C8C3;
+    --accent:       #0F6E6E;
+    --accent-soft:  #E2EFEC;
+    --track-a:      #2D6CA8;
+    --track-a-soft: #E4EDF6;
+    --track-b:      #A8681A;
+    --track-b-soft: #F7EEDF;
+    --guard:        #A33A2C;
+    --guard-soft:   #F7E7E4;
+
+    /* Figure plates stay light in both themes so diagram fills always read. */
+    --figure-bg:    #F4F6F4;
+    --figure-rule:  #D7DCD7;
+    --figure-ink:   #23292A;
+    --figure-ink-2: #5C6663;
+
+    --measure: 68ch;
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:       #0F1417;
+      --surface:     #161C1F;
+      --surface-2:   #1D2427;
+      --ink:         #E7EBE8;
+      --ink-soft:    #B6BFBC;
+      --ink-muted:   #8A9491;
+      --rule:        #2A3235;
+      --rule-strong: #3C4649;
+      --accent:      #4FBDB3;
+      --accent-soft: #143231;
+      --track-a:     #7FB2E0;
+      --track-a-soft:#152532;
+      --track-b:     #D9A65C;
+      --track-b-soft:#2C2417;
+      --guard:       #E08878;
+      --guard-soft:  #2E1B17;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:       #0F1417;
+    --surface:     #161C1F;
+    --surface-2:   #1D2427;
+    --ink:         #E7EBE8;
+    --ink-soft:    #B6BFBC;
+    --ink-muted:   #8A9491;
+    --rule:        #2A3235;
+    --rule-strong: #3C4649;
+    --accent:      #4FBDB3;
+    --accent-soft: #143231;
+    --track-a:     #7FB2E0;
+    --track-a-soft:#152532;
+    --track-b:     #D9A65C;
+    --track-b-soft:#2C2417;
+    --guard:       #E08878;
+    --guard-soft:  #2E1B17;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.65;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 clamp(1.1rem, 4vw, 3rem) 6rem; }
+
+  header.masthead { padding: clamp(3rem, 8vw, 5rem) 0 2.2rem; border-bottom: 2px solid var(--ink); margin-bottom: 3rem; }
+  .eyebrow { font-family: var(--font-mono); font-size: 0.83rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--accent); margin: 0 0 1rem; }
+  h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 6vw, 3.2rem); line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 1rem; text-wrap: balance; }
+  .standfirst { font-size: 1.24rem; line-height: 1.5; color: var(--ink-soft); max-width: 48ch; margin: 0; }
+
+  section { margin-bottom: 4rem; scroll-margin-top: 2rem; }
+  .sec-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.2rem; }
+  .sec-num { font-family: var(--font-mono); font-size: 0.83rem; color: var(--accent); font-weight: 600; flex: none; padding-top: 0.4rem; }
+  h2 { font-family: var(--font-display); font-size: clamp(1.5rem, 3.2vw, 1.95rem); line-height: 1.15; font-weight: 600; margin: 0; text-wrap: balance; }
+  h3 { font-family: var(--font-display); font-size: 1.24rem; font-weight: 600; margin: 2.2rem 0 0.6rem; text-wrap: balance; }
+
+  p, ul, ol { max-width: var(--measure); }
+  p { margin: 0 0 1rem; }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+  li { margin-bottom: 0.4rem; }
+  li::marker { color: var(--ink-muted); }
+  strong { font-weight: 650; }
+  code { font-family: var(--font-mono); font-size: 0.87em; background: var(--surface-2); padding: 0.12em 0.36em; border-radius: 3px; border: 1px solid var(--rule); }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  figure {
+    margin: 1.6rem 0 2rem;
+    background: var(--figure-bg);
+    border: 1px solid var(--figure-rule);
+    border-radius: 3px;
+    padding: 1.6rem 1rem 0.9rem;
+    overflow-x: auto;
+  }
+  figure .mermaid { display: flex; justify-content: center; min-width: 0; }
+  figcaption {
+    font-family: var(--font-mono); font-size: 0.83rem; color: var(--figure-ink-2);
+    padding-top: 1rem; margin-top: 0.9rem; border-top: 1px solid var(--figure-rule);
+  }
+  figcaption b { color: var(--figure-ink); font-weight: 600; }
+
+  .note { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 1rem 1.15rem; margin: 1.4rem 0; border-radius: 0 3px 3px 0; max-width: var(--measure); }
+  .note.guard { border-left-color: var(--guard); background: var(--guard-soft); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-label { display: block; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem; font-weight: 600; }
+  .note.guard .note-label { color: var(--guard); }
+
+  .table-wrap { overflow-x: auto; margin: 1.3rem 0 1.7rem; border: 1px solid var(--rule); border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; min-width: 32rem; }
+  th, td { text-align: left; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-muted); font-weight: 600; background: var(--surface-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .api-cards { display: grid; gap: 1rem; margin: 1.6rem 0 2rem; }
+  @media (min-width: 780px) { .api-cards { grid-template-columns: repeat(3, 1fr); } }
+  .api { border: 1px solid var(--rule); border-top: 3px solid var(--accent); background: var(--surface); padding: 1.1rem 1.2rem; border-radius: 0 0 3px 3px; }
+  .api.ant { border-top-color: var(--track-a); }
+  .api.voy { border-top-color: var(--track-b); }
+  .api h4 { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 0.5rem; color: var(--accent); }
+  .api.ant h4 { color: var(--track-a); }
+  .api.voy h4 { color: var(--track-b); }
+  .api p { font-size: 0.89rem; margin-bottom: 0.5rem; }
+  .api ul { font-size: 0.85rem; padding-left: 1.05rem; margin-bottom: 0; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Architecture Reference · Companion to the Implementation Guide</p>
+    <h1>Escalation Intelligence<br>Architecture</h1>
+    <p class="standfirst">Every moving piece, every external service, and exactly what data crosses each boundary.</p>
+  </header>
+
+  <section id="whole">
+    <div class="sec-head"><span class="sec-num">01</span><h2>The whole system on one page</h2></div>
+
+    <p>Read left to right. Every arrow is a JSON file written to disk. After extraction the pipeline splits into two tracks that never touch, and rejoins only at the review.</p>
+
+    <figure>
+      <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  SRC[("SLACK SOURCE<br/>#escalations-technology<br/>READ ONLY — never written to")]
+
+  F["<b>1 · Fetch</b><br/>644 threads<br/><i>Slack API</i>"]
+  E["<b>2 · Extract</b><br/>one call per thread<br/><i>Anthropic · 347 calls</i>"]
+  SPLIT{"Two independent<br/>judgements per thread"}
+
+  subgraph TA ["TRACK A · Technical faults — 269 threads"]
+    direction TB
+    A1["<b>3a · Embed</b> problem statements<br/><i>Voyage · 269 vectors</i>"]
+    A2["<b>4a · Pair + adjudicate</b><br/>36,046 pairs → 1,527 candidates<br/><i>Anthropic · 1,527 calls</i>"]
+    A3["<b>5a · Group</b><br/>complete-link cliques<br/><i>local</i>"]
+    A4["<b>6a · Report</b> rank by evidence<br/><i>local</i>"]
+    A5["<b>7a · Recommend</b><br/><i>Anthropic · 44 calls</i>"]
+    A1 --> A2 --> A3 --> A4 --> A5
+  end
+
+  subgraph TBW ["TRACK B · Manual workflows — 314 threads"]
+    direction TB
+    B1["<b>3b · Embed</b> workflow statements<br/><i>Voyage · 314 vectors</i>"]
+    B2["<b>4b · Pair + adjudicate</b><br/>49,141 pairs → 306 candidates<br/><i>Anthropic · 306 calls</i>"]
+    B3["<b>5b · Cluster</b><br/>complete-link cliques<br/><i>local</i>"]
+    B4["<b>6b · Score 0-100 + Recommend</b><br/><i>Anthropic · 31 calls</i>"]
+    B1 --> B2 --> B3 --> B4
+  end
+
+  R["<b>8 · Build review</b><br/>joins both tracks<br/><i>local · zero API</i>"]
+  P["<b>9 · Slack preview</b><br/>1 parent + 4 replies<br/><i>local · zero API</i>"]
+  PUB["<b>10 · Publish</b><br/>--publish required<br/><i>Slack API</i>"]
+  DST[("SLACK DESTINATION<br/>#escalations-intelligence<br/>WRITE ONLY — hard-locked")]
+
+  SRC --> F --> E --> SPLIT
+  SPLIT --> A1
+  SPLIT --> B1
+  A5 --> R
+  B4 --> R
+  R --> P --> PUB --> DST
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  style SRC fill:#E2EFEC,stroke:#0F6E6E,stroke-width:2px,color:#123
+  style DST fill:#E2EFEC,stroke:#0F6E6E,stroke-width:2px,color:#123
+  style E fill:#E4EDF6,stroke:#2D6CA8,color:#1B2224
+  style SPLIT fill:#FFF6E0,stroke:#A8681A,color:#1B2224
+  style PUB fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+      </pre>
+      <figcaption><b>Figure 1 — End-to-end architecture.</b> Ten stages, three external services, two parallel tracks. Numbers are from the real 365-day run.</figcaption>
+    </figure>
+  </section>
+
+  <section id="who">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Who does what</h2></div>
+
+    <p>Three outside services. Everything else is arithmetic on JSON files on your own machine.</p>
+
+    <div class="api-cards">
+      <div class="api">
+        <h4>Slack</h4>
+        <p><strong>The filing cabinet.</strong> Where the raw conversations live, and where the finished report goes.</p>
+        <ul>
+          <li>Reads threads from the source channel</li>
+          <li>Posts the final review to the destination channel</li>
+          <li>Three separate clients: read, post, delete</li>
+        </ul>
+      </div>
+      <div class="api ant">
+        <h4>Anthropic (Claude)</h4>
+        <p><strong>The reader who understands.</strong> Reads English and makes judgements about meaning.</p>
+        <ul>
+          <li>Reads a thread → fills in a form</li>
+          <li>Compares two threads → same issue?</li>
+          <li>Suggests what to do about a pattern</li>
+        </ul>
+      </div>
+      <div class="api voy">
+        <h4>Voyage AI</h4>
+        <p><strong>The librarian who sorts by topic.</strong> Turns sentences into numbers so we can measure resemblance fast and cheaply.</p>
+        <ul>
+          <li>Sentence in → 1,024 numbers out</li>
+          <li>Makes no judgements at all</li>
+          <li>Used only to shortlist what to ask Claude</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Why both an AI and an embedding service?</h3>
+
+    <p>This is the question people ask most, so here it is in the simplest terms.</p>
+
+    <p>Imagine 269 complaint letters, and you want to find the ones that describe the same problem. You could hand every possible pair to a careful human reader and ask "are these two the same?" — but with 269 letters there are <strong>36,046 pairs</strong>. That reader would take forever and cost a fortune.</p>
+
+    <p>So instead you do it in two passes:</p>
+
+    <ol>
+      <li><strong>Voyage sorts the pile roughly.</strong> It reads each letter once and gives it a position — like putting letters about billing near other letters about billing. Now you can measure, instantly and almost for free, which pairs are even <em>plausibly</em> about the same thing. That cuts 36,046 pairs down to 1,527.</li>
+      <li><strong>Claude reads the shortlist carefully.</strong> Only those 1,527 promising pairs get shown to the expensive reader, who actually decides "yes, same problem" or "no, just similar words".</li>
+    </ol>
+
+    <div class="note">
+      <span class="note-label">The one-line difference</span>
+      <p><strong>Voyage measures whether two sentences look alike. Claude decides whether they mean the same thing.</strong> Looking alike is cheap and often wrong; meaning the same thing is expensive and correct. The pipeline uses the cheap one to decide what to spend the expensive one on.</p>
+    </div>
+
+    <p>This matters because looking alike is genuinely unreliable. Two threads can describe the identical defect in completely different words and score low. Two unrelated threads that both mention Stripe can score high. If the system trusted Voyage's numbers to make the decision, it would group things by vocabulary rather than by meaning — which is exactly the mistake this design avoids.</p>
+
+    <figure>
+      <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','tertiaryColor':'#FFFFFF','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart LR
+  S1["269 problem<br/>statements"]
+  V["<b>VOYAGE</b><br/>turns each sentence<br/>into 1,024 numbers<br/><i>~3 API calls, pennies</i>"]
+  M["<b>LOCAL MATHS</b><br/>compare all 36,046 pairs<br/>keep those above 0.60<br/><i>free, instant</i>"]
+  SHORT["1,527 pairs<br/>worth asking about"]
+  C["<b>CLAUDE</b><br/>reads both statements,<br/>judges same / related / different<br/><i>1,527 calls</i>"]
+  OUT["188 'same issue'<br/>verdicts"]
+
+  S1 --> V --> M --> SHORT --> C --> OUT
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  style V fill:#F7EEDF,stroke:#A8681A,color:#1B2224
+  style C fill:#E4EDF6,stroke:#2D6CA8,color:#1B2224
+  style M fill:#EDF0ED,stroke:#9AA3A0,color:#1B2224
+      </pre>
+      <figcaption><b>Figure 2 — Why two services.</b> Voyage narrows 36,046 possibilities to 1,527. Claude makes the actual call on those. Without the first pass, the second would be 24× more expensive.</figcaption>
+    </figure>
+
+    <div class="note guard">
+      <span class="note-label">A common misunderstanding</span>
+      <p>The similarity number (0.60, 0.80) is <strong>not</strong> a decision that two things match. It only decides which questions are worth paying to ask. Pairs sitting right at the floor are routinely judged "different" by Claude — and that is the system working correctly, not a threshold that needs tuning.</p>
+    </div>
+  </section>
+
+  <section id="data">
+    <div class="sec-head"><span class="sec-num">03</span><h2>What crosses each boundary</h2></div>
+
+    <p>Data leaves the machine at only three points. Here is exactly what, and what never does.</p>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Boundary</th><th>What is sent</th><th>What is never sent</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Slack → local</strong></td>
+          <td>Raw thread text, timestamps, permalinks</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>local → Anthropic</strong><br/>extraction</td>
+          <td>Cleaned thread text (bot noise stripped)</td>
+          <td>Nothing else; this is the only stage that sends raw conversation</td>
+        </tr>
+        <tr>
+          <td><strong>local → Anthropic</strong><br/>adjudication &amp; recommendations</td>
+          <td>De-identified statements, classifications, counts, dates</td>
+          <td>Thread IDs, permalinks, vectors, raw text, scores, ranks</td>
+        </tr>
+        <tr>
+          <td><strong>local → Voyage</strong></td>
+          <td>Short de-identified statements only</td>
+          <td>Thread IDs, permalinks, emails, customer names, policy or Stripe IDs</td>
+        </tr>
+        <tr>
+          <td><strong>local → Slack</strong></td>
+          <td>The five finished review messages</td>
+          <td>Anything not in the reviewed preview file</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The privacy gate that enforces the Voyage boundary runs <em>before</em> any network call and inspects the exact strings that will be transmitted — rejecting emails, Slack permalinks, HubSpot URLs, Stripe-style identifiers, UUIDs, user mentions and long numeric IDs. Thread IDs and permalinks stay local and are re-attached after the vectors return.</p>
+  </section>
+
+  <section id="layers">
+    <div class="sec-head"><span class="sec-num">04</span><h2>The layered view</h2></div>
+
+    <p>The same system organised by responsibility rather than by sequence. Each layer only knows about the one below it.</p>
+
+    <figure>
+      <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','tertiaryColor':'#FFFFFF','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  subgraph L5 ["PRESENTATION — src/review, src/reviewPublishing"]
+    direction LR
+    P1["buildReview"]
+    P2["buildReviewPreview"]
+    P3["presentation<br/>titles · status · systems"]
+    P4["slackSafeCopy<br/>ROI guard"]
+  end
+  subgraph L4 ["ANALYSIS — src/groups, src/report, src/workflow"]
+    direction LR
+    N1["disjointCliqueCover"]
+    N2["buildReport · rankGroups"]
+    N3["workflowScoring<br/>0-100 formula"]
+    N4["buildWorkflowClusters"]
+  end
+  subgraph L3 ["INTELLIGENCE — src/llm, src/embeddings, src/adjudication"]
+    direction LR
+    I1["5 prompts<br/>+ 5 Zod schemas"]
+    I2["structuredParse<br/>+ enumNormalization"]
+    I3["cosineSimilarity<br/>candidate pairs"]
+  end
+  subgraph L2 ["CLIENTS — injected, never imported by logic"]
+    direction LR
+    C1["SlackPostFn"]
+    C2["SlackDeleteFn"]
+    C3["StructuredParseFn"]
+    C4["VoyageEmbedFn"]
+  end
+  subgraph L1 ["PERSISTENCE — src/persistence"]
+    direction LR
+    D1["dated filenames<br/>window + generation"]
+    D2["provenance-scoped caches"]
+    D3["21 artifact schemas"]
+  end
+
+  L5 --> L4 --> L3 --> L2
+  L3 --> L1
+  L4 --> L1
+  L5 --> L1
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+      </pre>
+      <figcaption><b>Figure 3 — Layers.</b> Business logic never imports an SDK; it receives a function. That is why 1,246 tests run in two seconds with zero network access.</figcaption>
+    </figure>
+
+    <div class="note">
+      <span class="note-label">Why the client layer matters</span>
+      <p>Every external call is a plain function type — <code>SlackPostFn</code>, <code>VoyageEmbedFn</code>, <code>StructuredParseFn</code>. The real implementation is wired in only at the command entry point. A test passes a fake, so a test <em>cannot</em> reach the network even by accident, and cannot cost money.</p>
+    </div>
+  </section>
+
+  <section id="artifacts">
+    <div class="sec-head"><span class="sec-num">05</span><h2>The artifact chain</h2></div>
+
+    <p>Each stage reads one file and writes another. This is what makes the pipeline restartable, auditable, and cheap to re-run.</p>
+
+    <figure>
+      <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'12px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','tertiaryColor':'#FFFFFF','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  X0["escalations-365d-2026-08-12.json<br/><i>644 threads</i>"]
+  X1["extractions-365d-2026-08-14.json<br/><i>644 structured records</i>"]
+
+  Y1["embeddings-365d-*.json<br/><i>269 vectors</i>"]
+  Y2["adjudications-365d-*.json<br/><i>1,527 verdicts</i>"]
+  Y3["groups-365d-v2-*.json<br/><i>44 groups</i>"]
+  Y4["report-365d-v2-*.json"]
+  Y5["recommendations-365d-*.json"]
+
+  Z1["workflow-embeddings-365d-*.json<br/><i>314 vectors</i>"]
+  Z2["workflow-adjudications-365d-*.json<br/><i>306 verdicts</i>"]
+  Z3["workflow-clusters-365d-v2-*.json<br/><i>31 recurring + 221 singleton</i>"]
+  Z4["workflow-recommendations-365d-*.json"]
+
+  W1["review-365d-2026-08-14.json"]
+  W2["review-slack-preview-365d-*.json<br/><i>immutable · 5 messages</i>"]
+  W3["publication receipt"]
+
+  X0 --> X1
+  X1 --> Y1 --> Y2 --> Y3 --> Y4 --> Y5
+  X1 --> Z1 --> Z2 --> Z3 --> Z4
+  Y5 --> W1
+  Z4 --> W1
+  X1 --> W1
+  W1 --> W2 --> W3
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  style X1 fill:#FFF6E0,stroke:#A8681A,color:#1B2224
+  style W2 fill:#E2EFEC,stroke:#0F6E6E,color:#1B2224
+      </pre>
+      <figcaption><b>Figure 4 — Artifact chain for the 365-day run.</b> The <code>-v2-</code> suffix marks a stage re-run with an improved algorithm over identical inputs; the filename parser prefers the higher generation.</figcaption>
+    </figure>
+
+    <h3>Filename grammar</h3>
+    <p>Every artifact name encodes what it is, so nothing can be mistaken for anything else:</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Segment</th><th>Meaning</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>prefix</td><td>which stage made it</td><td><code>report</code></td></tr>
+        <tr><td>window</td><td>how far back it looked</td><td><code>365d</code></td></tr>
+        <tr><td>generation</td><td>algorithm revision, optional</td><td><code>v2</code></td></tr>
+        <tr><td>date</td><td>when it was generated</td><td><code>2026-08-14</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>The two tracks also use different prefixes — <code>embeddings-</code> versus <code>workflow-embeddings-</code> — and the pattern is anchored, so a technical file can never be read as a workflow file.</p>
+  </section>
+
+  <section id="safety">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Safety architecture</h2></div>
+
+    <p>This system reads a live company channel and writes to another. Four independent layers make damage structurally difficult rather than merely unlikely.</p>
+
+    <figure>
+      <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','tertiaryColor':'#FFFFFF','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  subgraph S1 ["1 · Capability separation"]
+    A["read client<br/><b>has no post method</b>"]
+    B["post client<br/><b>only chat.postMessage</b>"]
+    C["delete client<br/><b>only chat.delete</b>"]
+  end
+  subgraph S2 ["2 · Destination lock"]
+    D["destination is a hard-coded constant"]
+    E["no --channel flag exists"]
+    F["re-checked on every single write"]
+  end
+  subgraph S3 ["3 · Fail-closed writes"]
+    G["dry run is the default"]
+    H["--publish / --delete required"]
+    I["duplicate publication refused"]
+  end
+  subgraph S4 ["4 · Truthfulness"]
+    J["benefits regenerated from stored evidence"]
+    K["invented hours / money / rates blocked"]
+    L["window mismatch rejected"]
+  end
+
+  S1 --> S2 --> S3 --> S4
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  style A fill:#E2EFEC,stroke:#0F6E6E,color:#1B2224
+  style G fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+  style K fill:#E4EDF6,stroke:#2D6CA8,color:#1B2224
+      </pre>
+      <figcaption><b>Figure 5 — Four safety layers.</b> Each is enforced in code and covered by tests, not left to operator discipline.</figcaption>
+    </figure>
+
+    <p>The clearest example: the module that reads Slack has <em>no posting method at all</em>. Not a disabled one — it does not exist. A bug in analysis code therefore cannot post to the source channel, because the capability is absent rather than guarded.</p>
+  </section>
+
+  <section id="numbers">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Cost and scale</h2></div>
+
+    <p>What a full 365-day run actually costs in API calls.</p>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Stage</th><th>Service</th><th class="num">Calls</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Fetch</td><td>Slack</td><td class="num">~700</td><td>one per thread for replies</td></tr>
+        <tr><td>Extract</td><td>Anthropic</td><td class="num">347</td><td>297 reused from the 180-day run</td></tr>
+        <tr><td>Embed — technical</td><td>Voyage</td><td class="num">3</td><td>269 sentences, batched 128</td></tr>
+        <tr><td>Embed — workflow</td><td>Voyage</td><td class="num">2</td><td>142 vectors reused</td></tr>
+        <tr><td>Adjudicate — technical</td><td>Anthropic</td><td class="num">1,527</td><td>largest single cost</td></tr>
+        <tr><td>Adjudicate — workflow</td><td>Anthropic</td><td class="num">306</td><td></td></tr>
+        <tr><td>Recommend — technical</td><td>Anthropic</td><td class="num">44</td><td>one per recurring group</td></tr>
+        <tr><td>Recommend — workflow</td><td>Anthropic</td><td class="num">31</td><td>recurring clusters only</td></tr>
+        <tr><td>Group, cluster, report, review, preview</td><td>—</td><td class="num">0</td><td>fully local</td></tr>
+        <tr><td>Publish</td><td>Slack</td><td class="num">5</td><td>1 parent + 4 replies</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Total: roughly <strong>2,255 Anthropic calls</strong> on <code>claude-haiku-4-5</code> and <strong>5 Voyage calls</strong>. The embedding step is almost free and saves roughly 24× on the adjudication step by narrowing 36,046 pairs to 1,527.</p>
+
+    <div class="note guard">
+      <span class="note-label">Rate limits to know about</span>
+      <p>The Voyage account is on the free tier — <strong>3 requests per minute</strong>. Running both embed steps back to back triggers an HTTP 429. The client has no automatic backoff yet; wait a minute and re-run, or add a payment method to lift the limit.</p>
+    </div>
+  </section>
+
+</div>

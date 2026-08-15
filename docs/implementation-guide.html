@@ -1,0 +1,1248 @@
+<title>Escalation Intelligence — How It Works</title>
+
+<style>
+  /* ---------- TOKENS: complete light palette on bare :root ---------- */
+  :root {
+    --paper:        #FAFAF7;
+    --surface:      #FFFFFF;
+    --surface-2:    #F2F3F1;
+    --ink:          #171C1E;
+    --ink-soft:     #414B4C;
+    --ink-muted:    #6B7674;
+    --rule:         #DDE0DC;
+    --rule-strong:  #C3C8C3;
+
+    --accent:       #0F6E6E;   /* deep teal — structure, links, stage numbers */
+    --accent-soft:  #E2EFEC;
+    --track-a:      #2D6CA8;   /* technical defects */
+    --track-a-soft: #E4EDF6;
+    --track-b:      #A8681A;   /* manual workflows */
+    --track-b-soft: #F7EEDF;
+    --guard:        #A33A2C;   /* safety rails only */
+    --guard-soft:   #F7E7E4;
+
+    /* Figures sit on a consistently light panel in both themes, like plates
+       in a printed manual. Deliberate: keeps diagram fills legible either way. */
+    --figure-bg:    #F4F6F4;
+    --figure-rule:  #D7DCD7;
+
+    --measure: 68ch;
+    --step--1: 0.83rem;
+    --step-0:  1.0rem;
+    --step-1:  1.24rem;
+    --step-2:  1.55rem;
+    --step-3:  1.95rem;
+    --step-4:  2.6rem;
+    --step-5:  3.4rem;
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:       #0F1417;
+      --surface:     #161C1F;
+      --surface-2:   #1D2427;
+      --ink:         #E7EBE8;
+      --ink-soft:    #B6BFBC;
+      --ink-muted:   #8A9491;
+      --rule:        #2A3235;
+      --rule-strong: #3C4649;
+
+      --accent:      #4FBDB3;
+      --accent-soft: #143231;
+      --track-a:     #7FB2E0;
+      --track-a-soft:#152532;
+      --track-b:     #D9A65C;
+      --track-b-soft:#2C2417;
+      --guard:       #E08878;
+      --guard-soft:  #2E1B17;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:       #0F1417;
+    --surface:     #161C1F;
+    --surface-2:   #1D2427;
+    --ink:         #E7EBE8;
+    --ink-soft:    #B6BFBC;
+    --ink-muted:   #8A9491;
+    --rule:        #2A3235;
+    --rule-strong: #3C4649;
+
+    --accent:      #4FBDB3;
+    --accent-soft: #143231;
+    --track-a:     #7FB2E0;
+    --track-a-soft:#152532;
+    --track-b:     #D9A65C;
+    --track-b-soft:#2C2417;
+    --guard:       #E08878;
+    --guard-soft:  #2E1B17;
+  }
+
+  /* ---------- BASE ---------- */
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--step-0);
+    line-height: 1.65;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(1.1rem, 4vw, 3rem) 6rem;
+  }
+
+  @media (min-width: 1000px) {
+    .page { grid-template-columns: 15rem minmax(0, 1fr); gap: 3.5rem; }
+    .toc-col { grid-column: 1; }
+    .main-col { grid-column: 2; }
+  }
+
+  /* ---------- MASTHEAD ---------- */
+  .masthead {
+    grid-column: 1 / -1;
+    padding: clamp(3rem, 8vw, 5.5rem) 0 2.5rem;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 3rem;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1rem;
+  }
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.3rem, 6.5vw, var(--step-5));
+    line-height: 1.04;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0 0 1.1rem;
+  }
+  .standfirst {
+    font-size: var(--step-1);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0;
+  }
+  .masthead-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2.2rem;
+    margin-top: 2rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+  .masthead-meta b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- TOC ---------- */
+  .toc { position: sticky; top: 2rem; padding-bottom: 3rem; }
+  .toc h2 {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 0.9rem;
+    font-weight: 500;
+  }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.42rem; counter-reset: toc; }
+  .toc a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    display: block;
+    border-left: 2px solid var(--rule);
+    padding-left: 0.7rem;
+  }
+  .toc a:hover, .toc a:focus-visible { color: var(--accent); border-left-color: var(--accent); }
+  @media (max-width: 999px) { .toc { position: static; display: none; } }
+
+  /* ---------- SECTIONS ---------- */
+  section { margin-bottom: 4.5rem; scroll-margin-top: 2rem; }
+
+  .sec-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.4rem; }
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    flex: none;
+    padding-top: 0.45rem;
+  }
+  h2.sec-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3.4vw, var(--step-3));
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 600;
+    line-height: 1.25;
+    margin: 2.4rem 0 0.7rem;
+    text-wrap: balance;
+  }
+  h4 {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+    margin: 1.8rem 0 0.6rem;
+  }
+
+  p, ul, ol { max-width: var(--measure); }
+  p { margin: 0 0 1.05rem; }
+  ul, ol { margin: 0 0 1.05rem; padding-left: 1.3rem; }
+  li { margin-bottom: 0.42rem; }
+  li::marker { color: var(--ink-muted); }
+
+  strong { font-weight: 650; color: var(--ink); }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.87em;
+    background: var(--surface-2);
+    padding: 0.12em 0.36em;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+  }
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.83rem;
+    line-height: 1.6;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.2rem;
+    border-radius: 2px;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; }
+
+  /* ---------- FIGURES (mermaid) ---------- */
+  figure {
+    margin: 1.8rem 0 2.2rem;
+    background: var(--figure-bg);
+    border: 1px solid var(--figure-rule);
+    border-radius: 3px;
+    padding: 1.5rem 1rem 0.9rem;
+    overflow-x: auto;
+  }
+  figure .mermaid { display: flex; justify-content: center; min-width: 0; }
+  figcaption {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: #5C6663;
+    padding-top: 1rem;
+    margin-top: 0.9rem;
+    border-top: 1px solid var(--figure-rule);
+    text-align: left;
+  }
+  figcaption b { color: #23292A; font-weight: 600; }
+
+  /* ---------- CALLOUTS ---------- */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 1rem 1.15rem;
+    margin: 1.5rem 0;
+    border-radius: 0 3px 3px 0;
+    max-width: var(--measure);
+  }
+  .note.guard { border-left-color: var(--guard); background: var(--guard-soft); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+  .note.guard .note-label { color: var(--guard); }
+
+  /* ---------- STAGE CARDS ---------- */
+  .stages { display: flex; flex-direction: column; gap: 0; margin: 1.6rem 0 2rem; }
+  .stage {
+    display: grid;
+    grid-template-columns: 3.1rem minmax(0, 1fr);
+    gap: 0 1rem;
+    padding: 1.35rem 0;
+    border-top: 1px solid var(--rule);
+  }
+  .stage:last-child { border-bottom: 1px solid var(--rule); }
+  .stage-n {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    padding-top: 0.12rem;
+  }
+  .stage-body h4 { margin: 0 0 0.35rem; font-family: var(--font-body); font-size: var(--step-0); text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 650; }
+  .stage-body p { margin: 0 0 0.55rem; font-size: 0.94rem; color: var(--ink-soft); max-width: 60ch; }
+  .stage-io { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; font-family: var(--font-mono); font-size: 0.76rem; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.16rem 0.5rem;
+    border-radius: 2px;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-muted);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .chip.api-anthropic { border-color: var(--track-a); color: var(--track-a); background: var(--track-a-soft); }
+  .chip.api-voyage { border-color: var(--track-b); color: var(--track-b); background: var(--track-b-soft); }
+  .chip.api-slack { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .chip.api-local { border-color: var(--rule-strong); }
+
+  /* ---------- TABLES ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.4rem 0 1.8rem; border: 1px solid var(--rule); border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; min-width: 34rem; }
+  th, td { text-align: left; padding: 0.62rem 0.85rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 600;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td code { font-size: 0.8rem; }
+
+  /* ---------- TRACK SPLIT ---------- */
+  .tracks { display: grid; gap: 1rem; margin: 1.6rem 0 2rem; }
+  @media (min-width: 720px) { .tracks { grid-template-columns: 1fr 1fr; } }
+  .track {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--track-a);
+    background: var(--surface);
+    padding: 1.15rem 1.25rem;
+    border-radius: 0 0 3px 3px;
+  }
+  .track.b { border-top-color: var(--track-b); }
+  .track h4 { margin: 0 0 0.5rem; color: var(--track-a); }
+  .track.b h4 { color: var(--track-b); }
+  .track p { font-size: 0.9rem; margin-bottom: 0.6rem; }
+  .track ul { font-size: 0.87rem; margin-bottom: 0; padding-left: 1.1rem; }
+
+  /* ---------- KEY NUMBERS ---------- */
+  .figures-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin: 1.6rem 0 2rem; }
+  .kfig { background: var(--surface); padding: 1rem 1.1rem; }
+  .kfig dt { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 0.35rem; }
+  .kfig dd { margin: 0; font-family: var(--font-display); font-size: var(--step-2); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .kfig dd small { font-family: var(--font-body); font-size: 0.72rem; font-weight: 400; color: var(--ink-muted); display: block; margin-top: 0.35rem; line-height: 1.35; }
+
+  hr.div { border: none; border-top: 1px solid var(--rule); margin: 2.5rem 0; max-width: var(--measure); }
+
+  .lead { font-size: var(--step-1); line-height: 1.55; color: var(--ink-soft); max-width: 56ch; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Implementation Guide · Internal Engineering Tooling</p>
+    <h1>Escalation Intelligence</h1>
+    <p class="standfirst">A pipeline that reads a year of Slack escalations and answers two questions: what keeps breaking, and what are we doing by hand over and over?</p>
+    <div class="masthead-meta">
+      <span><b>129</b> source files</span>
+      <span><b>1,246</b> tests</span>
+      <span><b>3</b> external APIs</span>
+      <span><b>5</b> LLM prompts</span>
+      <span><b>25</b> commands</span>
+      <span>Companion: <b>docs/architecture.html</b></span>
+    </div>
+  </header>
+
+  <aside class="toc-col">
+    <nav class="toc" aria-label="Contents">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#what">What it does</a></li>
+        <li><a href="#vocab">The vocabulary</a></li>
+        <li><a href="#overview">System overview</a></li>
+        <li><a href="#tracks">The two tracks</a></li>
+        <li><a href="#pipeline">The pipeline, stage by stage</a></li>
+        <li><a href="#apis">The three external APIs</a></li>
+        <li><a href="#llm">Inside one LLM call</a></li>
+        <li><a href="#embeddings">The embedding layer</a></li>
+        <li><a href="#grouping">Grouping: turning pairs into patterns</a></li>
+        <li><a href="#scoring">Scoring and ranking</a></li>
+        <li><a href="#safety">The safety model</a></li>
+        <li><a href="#artifacts">Artifacts and provenance</a></li>
+        <li><a href="#testing">How it is tested</a></li>
+        <li><a href="#results">What the year actually showed</a></li>
+        <li><a href="#commands">Command reference</a></li>
+        <li><a href="#lessons">Lessons and design decisions</a></li>
+      </ol>
+    </nav>
+  </aside>
+
+  <main class="main-col">
+
+    <!-- ============================================ -->
+    <section id="what">
+      <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">What it does</h2></div>
+
+      <p class="lead">Every day, people post problems into a Slack channel called <code>#escalations-technology</code>. Over a year that is 644 conversations. Nobody has time to read them all, so patterns hide in the pile.</p>
+
+      <p>This project reads that pile and produces a short, evidence-backed review for leadership. It does that by answering two separate questions about every single conversation:</p>
+
+      <ol>
+        <li><strong>Is this a technical fault?</strong> Something is broken in the product.</li>
+        <li><strong>Is this a repeatable manual task?</strong> Someone asked an engineer to do something by hand that a tool could do.</li>
+      </ol>
+
+      <p>Those two questions are genuinely independent. A conversation can be one, both, or neither. That insight is the heart of the design, and we will come back to it constantly.</p>
+
+      <p>The output is a Slack post: one summary message plus four threaded replies, written for people who will never look at the code.</p>
+
+      <div class="note">
+        <span class="note-label">The one-sentence version</span>
+        <p>It turns a year of messy Slack chatter into a ranked list of things to fix and things to automate, with a link to the original conversation behind every claim.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="vocab">
+      <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">The vocabulary</h2></div>
+
+      <p>The project invented a handful of words. If you learn these eight, everything else reads easily.</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Word</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Thread</strong></td><td>One Slack conversation: an opening message plus all its replies. The basic unit of everything.</td></tr>
+          <tr><td><strong>Extraction</strong></td><td>Reading one thread with an AI and filling in a structured form about it: is it technical, how severe, what system, is it a repeatable manual task.</td></tr>
+          <tr><td><strong>Embedding</strong></td><td>Turning a sentence into a list of 1,024 numbers, so a computer can measure how similar two sentences are.</td></tr>
+          <tr><td><strong>Adjudication</strong></td><td>Asking the AI a yes/no-ish question about <em>two</em> threads: are these the same underlying issue?</td></tr>
+          <tr><td><strong>Group / cluster</strong></td><td>A set of threads judged to be the same recurring thing. A group of 8 means it happened 8 times.</td></tr>
+          <tr><td><strong>Window</strong></td><td>How far back we looked: <code>90d</code>, <code>180d</code>, <code>365d</code>. Every file is stamped with its window so they never get mixed up.</td></tr>
+          <tr><td><strong>Artifact</strong></td><td>A JSON file written to disk by one stage and read by the next. The pipeline is a chain of these.</td></tr>
+          <tr><td><strong>Provenance</strong></td><td>The record of which exact file a result came from. Used to stop stale results leaking between runs.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="overview">
+      <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">System overview</h2></div>
+
+      <p>Here is the whole thing on one page. Read it left to right. Notice that after extraction the pipeline <strong>splits into two parallel tracks</strong> that never touch each other, then rejoins only at the very end to produce the review.</p>
+
+      <figure>
+        <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart LR
+  SL[("Slack<br/>#escalations-technology<br/>READ ONLY")]
+  FETCH["1 · Fetch<br/><i>Slack API</i>"]
+  EXTRACT["2 · Extract<br/><i>Anthropic</i>"]
+
+  subgraph TA ["TRACK A — Technical faults"]
+    direction TB
+    AE["3a · Embed<br/><i>Voyage</i>"]
+    AJ["4a · Adjudicate pairs<br/><i>Anthropic</i>"]
+    AG["5a · Group"]
+    AR["6a · Report"]
+    ARC["7a · Recommend<br/><i>Anthropic</i>"]
+    AE --> AJ --> AG --> AR --> ARC
+  end
+
+  subgraph TB2 ["TRACK B — Manual workflows"]
+    direction TB
+    BE["3b · Embed<br/><i>Voyage</i>"]
+    BJ["4b · Adjudicate pairs<br/><i>Anthropic</i>"]
+    BC["5b · Cluster"]
+    BR["6b · Score + Recommend<br/><i>Anthropic</i>"]
+    BE --> BJ --> BC --> BR
+  end
+
+  REVIEW["8 · Build review<br/><i>local only</i>"]
+  PREVIEW["9 · Slack preview<br/><i>local only</i>"]
+  PUBLISH["10 · Publish<br/><i>Slack API</i>"]
+  DEST[("Slack<br/>#escalations-intelligence<br/>WRITE ONLY")]
+
+  SL --> FETCH --> EXTRACT
+  EXTRACT --> AE
+  EXTRACT --> BE
+  ARC --> REVIEW
+  BR --> REVIEW
+  REVIEW --> PREVIEW --> PUBLISH --> DEST
+
+  style SL fill:#E2EFEC,stroke:#0F6E6E,color:#123
+  style DEST fill:#E2EFEC,stroke:#0F6E6E,color:#123
+  style EXTRACT fill:#E4EDF6,stroke:#2D6CA8,color:#123
+  style PUBLISH fill:#F7E7E4,stroke:#A33A2C,color:#123
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  classDef note fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+        </pre>
+        <figcaption><b>Figure 1.</b> End-to-end flow. Every arrow is a JSON file on disk. The source channel is never written to; the destination channel is never read from. &nbsp;→ &nbsp;<b>See <code>docs/architecture.html</code></b> for the full-detail version of this diagram.</figcaption>
+      </figure>
+
+      <p>Two things worth noticing straight away:</p>
+      <ul>
+        <li><strong>Each stage is a separate command.</strong> You run them one at a time. Nothing is a long-running service. If a stage fails, you re-run only that stage.</li>
+        <li><strong>Each stage writes a file.</strong> That file is the input to the next stage. This means you can inspect, audit, or replace any step without re-doing the expensive ones.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="tracks">
+      <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">The two tracks</h2></div>
+
+      <p>This is the single most important design decision, so it gets its own section.</p>
+
+      <p>When someone posts "the renewal email didn't send", that is a <strong>bug</strong>. When someone posts "can you please change this customer's email address in the backend", that is <strong>not a bug at all</strong> — the product is working exactly as designed. It is a repeatable manual chore.</p>
+
+      <p>An early version of this project only tracked bugs, and threw away every "please do this for me" request. That deleted the entire category of work that automation could remove. So the extraction step now makes <em>two independent judgements</em>, and the pipeline runs two separate analyses.</p>
+
+      <div class="tracks">
+        <div class="track">
+          <h4>Track A — Technical faults</h4>
+          <p>Threads where <code>isTechnicalEscalation = true</code>.</p>
+          <ul>
+            <li>Embeds the <strong>problem statement</strong> ("invoice tax is calculated wrongly")</li>
+            <li>Asks: "are these the same underlying issue?"</li>
+            <li>Produces: recurring defects to <strong>fix</strong></li>
+          </ul>
+        </div>
+        <div class="track b">
+          <h4>Track B — Manual workflows</h4>
+          <p>Threads where <code>isAutomationWorkflowCandidate = true</code>.</p>
+          <ul>
+            <li>Embeds the <strong>workflow statement</strong> ("update a customer's email across systems")</li>
+            <li>Asks: "are these the same repeatable task?"</li>
+            <li>Produces: manual work to <strong>automate</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <p>All four combinations are legitimate, and the numbers from the real 365-day run show all four occur in volume:</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Combination</th><th>Meaning</th><th class="num">Threads</th></tr></thead>
+        <tbody>
+          <tr><td>Technical only</td><td>A bug with no manual workaround</td><td class="num">143</td></tr>
+          <tr><td>Workflow only</td><td>An operational request, not a bug</td><td class="num">188</td></tr>
+          <tr><td>Both</td><td>A bug whose standing workaround is a manual fix</td><td class="num">126</td></tr>
+          <tr><td>Neither</td><td>A question, or a one-off</td><td class="num">187</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="note guard">
+        <span class="note-label">Why the tracks must never mix</span>
+        <p>The two tracks embed <em>different sentences</em>. If you put "invoice tax is wrong" and "update a customer's email" into the same similarity pool, you manufacture false neighbours. The code physically refuses this: <code>assertEmbeddingCandidatesSafe</code> throws if a batch contains a mix, and the files use different name prefixes so one can never be read as the other.</p>
+      </div>
+
+      <p>Note also that <strong>126 threads appear in both tracks</strong>. That is correct and intentional. But it means you must never add "269 technical + 314 workflow" together and call it 583 issues — the real number of distinct actionable threads is 457. The review computes this union explicitly to avoid double-counting.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="pipeline">
+      <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">The pipeline, stage by stage</h2></div>
+
+      <p>Ten stages. For each: what goes in, what happens, what comes out, and which API it costs money on.</p>
+
+      <div class="stages">
+
+        <div class="stage">
+          <div class="stage-n">01</div>
+          <div class="stage-body">
+            <h4>Fetch the threads</h4>
+            <p>Calls Slack's history API, walks each conversation, pulls every reply, and filters out bot noise like Jira sync messages. Writes one big JSON file of clean threads.</p>
+            <div class="stage-io">
+              <span class="chip api-slack">Slack API · read</span>
+              <span class="chip">in: channel + days</span>
+              <span class="chip">out: escalations-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">02</div>
+          <div class="stage-body">
+            <h4>Extract structured facts</h4>
+            <p>One AI call per thread. Reads the conversation and fills a strict form: is it technical, severity, affected system, resolution status, <em>and</em> the workflow questions. This is where the two tracks are born. 644 threads = 644 calls, though 297 were reused from an earlier run because the text was byte-identical.</p>
+            <div class="stage-io">
+              <span class="chip api-anthropic">Anthropic · 347 calls</span>
+              <span class="chip">in: threads</span>
+              <span class="chip">out: extractions-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">03</div>
+          <div class="stage-body">
+            <h4>Embed the statements</h4>
+            <p>Sends only the short, de-identified statements to Voyage, which returns 1,024 numbers per sentence. Runs twice — once per track, into two separate files. Cheap: 269 + 314 sentences is about 5 API calls total.</p>
+            <div class="stage-io">
+              <span class="chip api-voyage">Voyage · ~5 calls</span>
+              <span class="chip">out: embeddings-365d-*.json</span>
+              <span class="chip">out: workflow-embeddings-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">04</div>
+          <div class="stage-body">
+            <h4>Generate candidate pairs, then adjudicate</h4>
+            <p>Compares every possible pair of embeddings locally (36,046 pairs for the technical track) and keeps only those above a similarity floor. Then asks the AI about each survivor: same issue, related family, or different? <strong>The floor is not a decision</strong> — it only decides which questions are worth paying to ask.</p>
+            <div class="stage-io">
+              <span class="chip api-anthropic">Anthropic · 1,527 + 306 calls</span>
+              <span class="chip api-local">pair maths: local</span>
+              <span class="chip">out: adjudications-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">05</div>
+          <div class="stage-body">
+            <h4>Build groups and clusters</h4>
+            <p>Turns thousands of pairwise verdicts into actual groups using graph algorithms. No AI, no network — pure deterministic maths. This stage had a serious quality bug at year scale, covered in section 09.</p>
+            <div class="stage-io">
+              <span class="chip api-local">fully local</span>
+              <span class="chip">out: groups-365d-v2-*.json</span>
+              <span class="chip">out: workflow-clusters-365d-v2-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">06</div>
+          <div class="stage-body">
+            <h4>Rank and report</h4>
+            <p>Sorts recurring issues by evidence — how often, how many still open, severity, customer impact, recency. Deliberately a tiered sort, not a weighted score, so no invented weights hide inside it.</p>
+            <div class="stage-io">
+              <span class="chip api-local">fully local</span>
+              <span class="chip">out: report-365d-v2-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">07</div>
+          <div class="stage-body">
+            <h4>Recommend</h4>
+            <p>One AI call per recurring group: what should engineering do about this? Returns a structured recommendation — action type, priority, feasibility, proposal, guardrails. For workflows, a deterministic 0–100 score is computed <em>first</em>, and the AI is never shown it.</p>
+            <div class="stage-io">
+              <span class="chip api-anthropic">Anthropic · 44 + 31 calls</span>
+              <span class="chip">out: recommendations-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">08</div>
+          <div class="stage-body">
+            <h4>Assemble the review</h4>
+            <p>Joins both tracks into one leadership document: overview, top automation opportunities, recurring workflows, recurring technical issues, long tail, next actions. Validates that every input covers the same window and that recommendations trace to the exact files being used.</p>
+            <div class="stage-io">
+              <span class="chip api-local">fully local · zero API</span>
+              <span class="chip">out: review-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">09</div>
+          <div class="stage-body">
+            <h4>Render the Slack preview</h4>
+            <p>Produces the exact five messages that would be posted, as an immutable file. Rewrites benefit sentences deterministically from stored evidence, and refuses to build if any unsupported claim (hours saved, money saved, monthly rates) appears in the copy.</p>
+            <div class="stage-io">
+              <span class="chip api-local">fully local · zero API</span>
+              <span class="chip">out: review-slack-preview-365d-*.json</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">10</div>
+          <div class="stage-body">
+            <h4>Publish</h4>
+            <p>Posts the parent message, then the four replies into that thread. Dry-run by default — a live write requires an explicit <code>--publish</code> flag. Resumable, and refuses to publish the same preview twice.</p>
+            <div class="stage-io">
+              <span class="chip api-slack">Slack API · write</span>
+              <span class="chip">out: publication receipt</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="apis">
+      <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">The three external APIs</h2></div>
+
+      <p>The system talks to exactly three services. Everything else is local computation on JSON files.</p>
+
+      <h3>Anthropic and Voyage — what each one is actually for</h3>
+
+      <p>This is the question people ask most, so here it is with no jargon at all.</p>
+
+      <p>Imagine you have <strong>269 complaint letters</strong> and you want to find the ones describing the same problem. You could hand every possible pair to a careful reader and ask "are these two the same?" But 269 letters make <strong>36,046 pairs</strong>. That reader would take forever and cost a fortune.</p>
+
+      <p>So you do it in two passes:</p>
+
+      <ol>
+        <li><strong>Voyage sorts the pile roughly.</strong> It reads each letter once and gives it a position — letters about billing end up near other letters about billing. Now you can measure instantly, and almost for free, which pairs are even <em>plausibly</em> about the same thing. That cuts 36,046 pairs down to 1,527.</li>
+        <li><strong>Claude reads the shortlist properly.</strong> Only those 1,527 promising pairs go to the expensive reader, who actually decides "yes, same problem" or "no, just similar words".</li>
+      </ol>
+
+      <div class="note">
+        <span class="note-label">The one-line difference</span>
+        <p><strong>Voyage measures whether two sentences look alike. Anthropic decides whether they mean the same thing.</strong> Looking alike is cheap and often wrong; meaning the same thing is expensive and correct. The pipeline uses the cheap one to decide what to spend the expensive one on.</p>
+      </div>
+
+      <p>Put another way: <strong>Voyage never makes a decision.</strong> It has no opinion about your business, it cannot tell a bug from a feature request, and it never sees a whole conversation. All it does is turn a sentence into 1,024 numbers so that a computer can sort sentences by resemblance. Every actual judgement in this system — is this technical, are these the same, what should we do — is made by Anthropic or by deterministic code.</p>
+
+      <p>And Voyage earns its place purely on cost. Without it, judging every pair would need 36,046 Anthropic calls instead of 1,527 — about <strong>24× the spend</strong> — for the technical track alone.</p>
+
+      <figure>
+        <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  subgraph LOCAL ["Your laptop — all analysis happens here"]
+    direction TB
+    J1["JSON artifacts on disk"]
+    G1["Graph algorithms<br/>Cosine similarity<br/>Scoring · Ranking · Rendering"]
+    J1 <--> G1
+  end
+
+  SLACK["<b>Slack Web API</b><br/>conversations.history<br/>conversations.replies<br/>chat.postMessage<br/>chat.delete"]
+  ANT["<b>Anthropic Messages API</b><br/>claude-haiku-4-5<br/>structured outputs via Zod"]
+  VOY["<b>Voyage AI Embeddings</b><br/>voyage-4-large<br/>1024 dimensions"]
+
+  SLACK -->|"raw threads IN"| LOCAL
+  LOCAL -->|"finished report OUT"| SLACK
+  LOCAL -->|"de-identified text"| ANT
+  ANT -->|"structured JSON"| LOCAL
+  LOCAL -->|"short statements only"| VOY
+  VOY -->|"number vectors"| LOCAL
+
+  style SLACK fill:#E2EFEC,stroke:#0F6E6E,color:#123
+  style ANT fill:#E4EDF6,stroke:#2D6CA8,color:#123
+  style VOY fill:#F7EEDF,stroke:#A8681A,color:#123
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  classDef note fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+        </pre>
+        <figcaption><b>Figure 2.</b> All three integrations. Raw Slack text goes to Anthropic during extraction only; from that point on, only structured, de-identified fields leave the machine.</figcaption>
+      </figure>
+
+      <h3>Slack</h3>
+      <p>Used for three separate jobs, each with its own client module — and this separation is a safety feature, not tidiness:</p>
+      <ul>
+        <li><code>src/slack/client.ts</code> — <strong>read only.</strong> It has no posting method at all. A test asserts the file contains no <code>chat.postMessage</code> call.</li>
+        <li><code>src/slackPublishing/client.ts</code> — exposes <strong>only</strong> <code>chat.postMessage</code>.</li>
+        <li><code>src/slackCleanup/client.ts</code> — exposes <strong>only</strong> <code>chat.delete</code>.</li>
+      </ul>
+      <p>Because the capability to write simply does not exist in the reading module, a bug in analysis code cannot post to Slack.</p>
+
+      <h3>Anthropic</h3>
+      <p>Model: <code>claude-haiku-4-5</code> throughout — a small, fast, cheap model, which is the right choice because every task here is classification or short structured judgement, not long-form generation.</p>
+      <p>Five distinct prompts, each with its own version number so results can be traced:</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Prompt</th><th>Version</th><th>Job</th><th class="num">Calls (365d)</th></tr></thead>
+        <tbody>
+          <tr><td>Escalation extraction</td><td class="num">v3.1</td><td>Read a thread → structured facts</td><td class="num">347</td></tr>
+          <tr><td>Recurrence adjudication</td><td class="num">v1</td><td>Two defects — same issue?</td><td class="num">1,527</td></tr>
+          <tr><td>Workflow adjudication</td><td class="num">v2</td><td>Two tasks — same workflow?</td><td class="num">306</td></tr>
+          <tr><td>Issue recommendation</td><td class="num">v1</td><td>What should engineering fix?</td><td class="num">44</td></tr>
+          <tr><td>Workflow recommendation</td><td class="num">v1</td><td>What should we automate?</td><td class="num">31</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>Total for the full year: about <strong>2,255 calls</strong> on the cheapest model.</p>
+
+      <h3>Voyage AI</h3>
+      <p>A dedicated embeddings provider — this is <em>not</em> Anthropic. Model <code>voyage-4-large</code>, returning 1,024 numbers per sentence, batched 128 at a time.</p>
+
+      <div class="note guard">
+        <span class="note-label">Real-world gotcha</span>
+        <p>The account is on Voyage's free tier: <strong>3 requests per minute</strong>. Running the technical and workflow embeds back to back triggered an HTTP 429. The fix was to wait 75 seconds and retry. The client has no automatic backoff for 429 yet — worth adding, or adding a payment method to lift the limit.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="llm">
+      <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Inside one LLM call</h2></div>
+
+      <p>Every AI call in this system goes through the same six-step machine. Understanding this one diagram means understanding all five prompts.</p>
+
+      <figure>
+        <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  A["<b>1 · Zod schema</b><br/>TypeScript object with exact<br/>allowed values for every field"]
+  B["<b>2 · zodOutputFormat</b><br/>compiles schema to JSON Schema<br/>sent with the request"]
+  C["<b>3 · Prompt + de-identified payload</b><br/>system prompt teaches the rules,<br/>user prompt carries only safe fields"]
+  D["<b>4 · Anthropic returns JSON</b><br/>grammar-constrained to the schema"]
+  E["<b>5 · Enum normalization</b><br/>an invalid value is rewritten to a<br/>documented fallback, and recorded"]
+  F["<b>6 · Strict Zod parse</b><br/>still strict — anything else fails loudly"]
+  G["<b>7 · Code-enforced invariants</b><br/>cross-field rules applied here,<br/>never as schema refinements"]
+  H(["Validated result<br/>written to JSON artifact"])
+
+  A --> B --> C --> D --> E --> F --> G --> H
+
+  R{"retryable error?<br/>rate limit / 5xx"}
+  D -.-> R
+  R -.->|"yes · exponential backoff, bounded"| C
+  R -.->|"no"| X(["recorded as failed,<br/>run continues"])
+
+  style A fill:#E4EDF6,stroke:#2D6CA8,color:#123
+  style E fill:#F7EEDF,stroke:#A8681A,color:#123
+  style G fill:#E2EFEC,stroke:#0F6E6E,color:#123
+  style H fill:#E2EFEC,stroke:#0F6E6E,color:#123
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  classDef note fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+        </pre>
+        <figcaption><b>Figure 3.</b> The anatomy of every LLM call. Steps 5 and 7 exist because of real production failures — described below.</figcaption>
+      </figure>
+
+      <h3>Why step 7 exists: the silent-refinement trap</h3>
+      <p>Zod lets you write cross-field rules like "if this is not a technical escalation, the problem statement must be null". It is tempting to put that in the schema as a <code>.refine()</code>.</p>
+      <p><strong>That silently breaks.</strong> Cross-field refinements cannot be expressed in JSON Schema, so the compiler drops them. The rule never reaches the model — but it <em>does</em> still run when validating the reply. The result: perfectly good classifications get rejected client-side for breaking a rule the model was never told about.</p>
+      <p>So every cross-field rule in this project is enforced in plain code after parsing: <code>enforceNonTechnicalInvariant</code>, <code>enforceWorkflowInvariant</code>, <code>enforceIssueNameInvariant</code>, and so on.</p>
+
+      <h3>Why step 5 exists: four lost threads</h3>
+      <p>In the 180-day run, 4 of 297 extractions failed because the model returned enum values that did not exist — for example <code>configuration_issue</code> in a field that only accepts workflow types. Strict validation correctly rejected them, but that meant losing the whole thread.</p>
+      <p>The fix has three parts, and the order matters:</p>
+      <ol>
+        <li>The prompt now lists <strong>every allowed value verbatim</strong> with an explicit fallback, and a test fails if a schema ever gains a value the prompt does not teach.</li>
+        <li>Before validation, an invalid value is rewritten to a <strong>documented fallback</strong> — always an explicit "unknown" bucket (<code>unclear</code>, <code>unknown</code>, <code>other_operational_workflow</code>, or null). Never a guess at a specific category, because a wrong-but-specific value silently corrupts counts while an explicit unknown does not.</li>
+        <li>Every rewrite is <strong>recorded</strong> on the result with the field, the raw value, the fallback and the reason — so a normalized field is always auditable.</li>
+      </ol>
+
+      <h3>Dependency injection: why tests cannot reach the network</h3>
+      <p>No business logic imports an SDK. Instead every module takes a function:</p>
+      <pre><code>type StructuredParseFn&lt;T&gt; = (req: Request) =&gt; Promise&lt;Response&lt;T&gt;&gt;;
+type VoyageEmbedFn      = (req: Request) =&gt; Promise&lt;Vectors&gt;;
+type SlackPostFn        = (req: Request) =&gt; Promise&lt;{ ts: string }&gt;;
+type SlackDeleteFn      = (req: Request) =&gt; Promise&lt;{ ok: boolean }&gt;;</code></pre>
+      <p>The real implementation is wired in only at the CLI entry point. A test passes a fake. This is why all 1,246 tests run in about two seconds with zero API calls and zero cost.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="embeddings">
+      <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">The embedding layer</h2></div>
+
+      <h3>What an embedding actually is</h3>
+      <p>Imagine giving every sentence a location on a map. Sentences about similar things end up near each other. An embedding is that location — except instead of two coordinates it has 1,024, because meaning is more complicated than a map.</p>
+      <p><strong>Cosine similarity</strong> is the angle between two of those locations, expressed from −1 to 1. Around 1.0 means "these point the same way" — very similar wording. Around 0 means unrelated.</p>
+
+      <h3>Why we do not just cluster on similarity</h3>
+      <p>This is the most important idea in the project, and the easiest to get wrong.</p>
+      <p>Similarity measures <em>wording overlap</em>, not whether two things are the same problem. Two threads can describe the same defect in completely different words and score low. Two unrelated threads about Stripe can share vocabulary and score high.</p>
+
+      <div class="note">
+        <span class="note-label">The floor is a budget, not a decision</span>
+        <p>The similarity floor (0.60 technical, 0.80 workflow) only decides <strong>which pairs are worth paying an AI to look at</strong>. It never decides that two things are the same. That judgement is always made by the adjudication prompt, reading both statements. Pairs at the floor are routinely judged "different".</p>
+      </div>
+
+      <p>The workflow floor of 0.80 was not guessed. It was chosen after measuring the real distribution over 10,011 pairs: median 0.3177, mean 0.3392, with only 136 pairs above 0.80. Workflow statements are far more formulaic than defect descriptions, so they needed a higher floor and finer measurement buckets than the technical track.</p>
+
+      <h3>The privacy gate</h3>
+      <p>Only the short, de-identified statement is ever sent to Voyage. The gate runs before any network call and inspects the exact strings that will be transmitted:</p>
+      <ul>
+        <li>Email addresses, Slack permalinks, HubSpot URLs</li>
+        <li>Stripe-style identifiers, UUIDs, Slack user mentions, long numeric IDs</li>
+      </ul>
+      <p>The thread's <code>rootTs</code> and permalink stay on the machine as local metadata and are re-attached after the vectors come back.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="grouping">
+      <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Grouping: turning pairs into patterns</h2></div>
+
+      <p>After adjudication you have thousands of verdicts about <em>pairs</em>. You need <em>groups</em>. This is a graph problem: threads are dots, "same issue" verdicts are lines between them.</p>
+
+      <h3>The naive approach, and why it failed</h3>
+      <p>The obvious method is connected components: if A links to B and B links to C, put all three in one group. This worked at 90 and 180 days. At 365 days it broke in two opposite directions at once.</p>
+
+      <figure>
+        <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  subgraph P1 ["Failure 1 — chaining"]
+    direction LR
+    A1((A)) --- B1((B)) --- C1((C)) --- D1((D)) --- E1((E))
+    N1["A and E were never<br/>judged similar, yet a chain<br/>of links merged them.<br/><b>One 46-member blob,<br/>only 12.6% connected.</b>"]
+  end
+
+  subgraph P2 ["Failure 2 — fragmenting"]
+    direction TB
+    N2["A single 'different' verdict inside a<br/>32-thread component switched the code to<br/>emitting <b>every overlapping clique</b>.<br/><br/>Result: 27 groups from one component,<br/>the same issue named 5 times,<br/>one thread appearing in 8 groups."]
+  end
+
+  style N1 fill:#F7E7E4,stroke:#A33A2C,color:#123
+  style N2 fill:#F7E7E4,stroke:#A33A2C,color:#123
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  classDef note fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+        </pre>
+        <figcaption><b>Figure 4.</b> Both failure modes were caught by inspecting the real 365-day graph before publishing anything.</figcaption>
+      </figure>
+
+      <h3>The fix: complete-link clique cover</h3>
+      <p>The replacement rule is one sentence: <strong>every pair inside a group must have been independently judged the same.</strong></p>
+      <p>Mechanically it finds all maximal cliques — sets where everyone links to everyone — then claims them greedily, largest first, skipping any that touches an already-assigned thread. Ranking is size, then average confidence, then lowest ID, so the result is identical every run.</p>
+
+      <p>This gives four properties for free:</p>
+      <ul>
+        <li><strong>No overlap.</strong> A thread belongs to at most one group.</li>
+        <li><strong>No chaining.</strong> A transitive path cannot form a group.</li>
+        <li><strong>No contradictions.</strong> A "different" pair has no link, so it can never be inside a clique.</li>
+        <li><strong>Deterministic.</strong> Same verdicts always produce the same groups.</li>
+      </ul>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">Before (v1)</th><th class="num">After (v2)</th></tr></thead>
+        <tbody>
+          <tr><td>Technical groups</td><td class="num">84</td><td class="num">44</td></tr>
+          <tr><td>Distinct threads inside them</td><td class="num">131</td><td class="num">112</td></tr>
+          <tr><td>Inflation factor</td><td class="num">1.76×</td><td class="num">1.00×</td></tr>
+          <tr><td>Threads in more than one group</td><td class="num">54</td><td class="num">0</td></tr>
+          <tr><td>Distinct issue names</td><td class="num">71 of 84</td><td class="num">44 of 44</td></tr>
+          <tr><td>Largest workflow cluster</td><td class="num">46</td><td class="num">8</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>The trade is deliberate: complete-link favours <strong>precision over recall</strong>. Nineteen technical threads that have some similarity evidence now sit outside any group rather than being forced in. The evidence is still in the adjudication file if you want it.</p>
+
+      <div class="note">
+        <span class="note-label">Important nuance</span>
+        <p>A missing adjudication is <em>not</em> treated as "different". Only pairs actually judged the same create links, and candidate generation only ever asked about pairs above the floor. The rule is built around the evidence that exists, not evidence that was never collected.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="scoring">
+      <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Scoring and ranking</h2></div>
+
+      <p>Two different ranking systems, deliberately, because the two tracks need different things.</p>
+
+      <h3>Technical: tiered sorting, no score</h3>
+      <p>Recurring defects are sorted by a sequence of tie-breakers — occurrence count, then open count, then peak severity, then customer impact, then recency. No weights, because inventing weights implies a precision the evidence does not have.</p>
+
+      <h3>Workflow: an explicit 0–100 formula</h3>
+      <pre><code>baseScore = 0.30 × frequency
+          + 0.25 × manualBurden
+          + 0.15 × automationReadiness
+          + 0.10 × engineeringDependency
+          + 0.10 × customerImpact
+          + 0.10 × recency</code></pre>
+
+      <p>Each factor is itself 0–100:</p>
+      <ul>
+        <li><strong>frequency</strong> — a saturating log curve, so 2→4 occurrences separates strongly while 30→40 barely moves. Prevents one huge cluster dominating.</li>
+        <li><strong>manualBurden</strong> — weighted average over automation status (manual 100, partly 60, unknown 50, already automated 10).</li>
+        <li><strong>automationReadiness</strong> — how amenable the workflow shape is to a guarded tool, minus a penalty for each extra classification spanned.</li>
+        <li><strong>engineeringDependency</strong> — 50 baseline because it reached the engineering channel at all, plus code-level involvement and privileged access.</li>
+        <li><strong>customerImpact</strong> — from extraction records only. With no evidence it is explicitly neutral at 50, never guessed.</li>
+        <li><strong>recency</strong> — full marks within 14 days, decaying to zero at 180.</li>
+      </ul>
+
+      <div class="note guard">
+        <span class="note-label">The LLM cannot touch the numbers</span>
+        <p>The score is computed <strong>before</strong> the AI is called. Its output schema has no score and no rank field. The payload it receives contains neither. Rank comes from the deterministic sort position. The AI contributes a qualitative <code>automationPriority</code> that sits <em>alongside</em> the score and never reorders it — and there is a test that feeds the model a fabricated score and rank and asserts they are ignored.</p>
+      </div>
+
+      <p>This matters because the AI's own priority labels turned out to be useless as a ranking signal: it marked <strong>36 of 44</strong> technical issues "high". When 82% of everything is high priority, the field cannot discriminate. The deterministic workflow score behaved far better: 5 high, 20 medium, 6 low.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="safety">
+      <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">The safety model</h2></div>
+
+      <p>This system reads a live company Slack channel and writes to another. Several layers exist to make damage structurally difficult rather than merely unlikely.</p>
+
+      <figure>
+        <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'ui-monospace, Menlo, monospace','fontSize':'13px','background':'#F4F6F4','mainBkg':'#FFFFFF','primaryColor':'#FFFFFF','primaryTextColor':'#1B2224','primaryBorderColor':'#9AA3A0','secondaryColor':'#EDF0ED','secondaryTextColor':'#1B2224','tertiaryColor':'#FFFFFF','tertiaryTextColor':'#1B2224','lineColor':'#5F6A68','textColor':'#1B2224','titleColor':'#1B2224','nodeTextColor':'#1B2224','edgeLabelBackground':'#F4F6F4','clusterBkg':'#E9ECE9','clusterBorder':'#B9C0BA'}}}%%
+flowchart TB
+  subgraph G1 ["Channel safety"]
+    S1["Source C0SOURCE0000<br/>read-only client, no post method"]
+    S2["Destination C0DEST00000<br/>hard-coded constant, no CLI override"]
+    S3["assertWriteTarget re-checks<br/>the channel on <b>every single write</b>"]
+  end
+  subgraph G2 ["Publication safety"]
+    P1["dry-run by default;<br/>--publish required for any write"]
+    P2["parent posted first;<br/>failed parent aborts the replies"]
+    P3["resumable; duplicate<br/>publication refused"]
+  end
+  subgraph G3 ["Privacy gates"]
+    V1["Voyage: statements only,<br/>identifier patterns rejected"]
+    V2["Anthropic: structured fields only<br/>after extraction — no rootTs,<br/>no permalinks, no vectors"]
+    V3["Secrets never logged"]
+  end
+  subgraph G4 ["Truthfulness gates"]
+    T1["unsupported-claim guard blocks<br/>invented hours, money, rates"]
+    T2["benefit sentences regenerated<br/>from stored evidence only"]
+    T3["window mismatch rejected —<br/>a 90d report cannot appear<br/>inside a 180d review"]
+  end
+
+  style S1 fill:#E2EFEC,stroke:#0F6E6E,color:#123
+  style S2 fill:#E2EFEC,stroke:#0F6E6E,color:#123
+  style P1 fill:#F7E7E4,stroke:#A33A2C,color:#123
+  style V1 fill:#F7EEDF,stroke:#A8681A,color:#123
+  style T1 fill:#E4EDF6,stroke:#2D6CA8,color:#123
+
+  classDef default fill:#FFFFFF,stroke:#9AA3A0,stroke-width:1px,color:#1B2224
+  classDef note fill:#F7E7E4,stroke:#A33A2C,color:#1B2224
+        </pre>
+        <figcaption><b>Figure 5.</b> Four independent layers. Each is enforced in code and covered by tests, not left to operator discipline.</figcaption>
+      </figure>
+
+      <h3>The truthfulness guard is unusual, and worth explaining</h3>
+      <p>The AI's recommendations contained confident, invented numbers: "eliminate 13 manual state transitions per month" for a cluster observed 16 times in five months; "two manual backend corrections per week (extrapolated)" for two occurrences 18 days apart; "saves ~1–2 hours of backend work per week" from an assumed minutes-per-task nobody measured.</p>
+      <p>None of that is derivable from anything the pipeline stores. Rather than trying to clean the prose with pattern matching, the Slack benefit sentence is <strong>regenerated deterministically</strong> from stored counts and dates:</p>
+      <pre><code>Removes a workflow observed 8 times in 12 months, recurring
+across 161 days. All 8 recorded occurrences required manual
+intervention.</code></pre>
+      <p>Every clause traces to a stored field. A separate guard then scans the finished copy for rate claims, hours-saved claims, monetary estimates and the word "extrapolated", and <strong>throws rather than publishing</strong>.</p>
+      <p>That guard also caught a false positive of its own: it initially blocked "implement a 24-hour read-only window", which is a legitimate design parameter rather than a savings claim. The pattern now requires a savings verb nearby, and tests pin both directions.</p>
+
+      <h3>Deleting the old report safely</h3>
+      <p>When the 90-day report needed retiring, the cleanup command was built to be deliberately timid: it reconstructs the exact message timestamps <strong>only from local publication receipts</strong>. There is no channel search and no text matching anywhere in it, so a human's message or another tool's message is structurally unreachable. It deletes replies first and the parent last, treats "already deleted" as success so it can be safely re-run, and requires an explicit <code>--delete</code> flag.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="artifacts">
+      <div class="sec-head"><span class="sec-num">12</span><h2 class="sec-title">Artifacts and provenance</h2></div>
+
+      <p>Every stage writes a file whose name encodes what it is:</p>
+      <pre><code>&lt;prefix&gt;-&lt;window&gt;[-v&lt;generation&gt;]-&lt;date&gt;.json
+
+report-365d-v2-2026-08-14.json
+   │      │    │       └── when it was generated
+   │      │    └────────── generation 2: a better algorithm, same inputs
+   │      └─────────────── 365-day window
+   └────────────────────── which stage produced it</code></pre>
+
+      <h3>Why provenance became the hardest problem</h3>
+      <p>Each stage caches results so a re-run does not pay twice. The trouble is that cache keys were built from <em>content identity</em> — a thread ID, a pair ID, a group ID — and those repeat across windows. The same Slack thread appears in the 90-day, 180-day and 365-day datasets with the same ID.</p>
+
+      <p>This produced a class of bug that is silent by nature. It was found in <strong>three separate stages</strong>:</p>
+
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stage</th><th>Cache key</th><th>Problem</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>Technical adjudication</td><td><code>pairId + prompt + model</code></td><td>Would reuse 90d verdicts computed on different problem statements</td><td>Scope to matching <code>extractionsInputFile</code></td></tr>
+          <tr><td>Technical recommendations</td><td><code>groupId + prompt + model</code></td><td>Did reuse 4 recommendations from the 90d file</td><td>Scope to matching <code>reportInputFile</code></td></tr>
+          <tr><td>Workflow adjudication</td><td><code>pairId + prompt + model</code></td><td>Would reuse 180d verdicts in the 365d run</td><td>Scope to matching embeddings file</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>Two caches were found to be <strong>safe by construction</strong> and deliberately left alone:</p>
+      <ul>
+        <li><strong>Extraction</strong> keys on thread ID + prompt version + model. Reuse is legitimate <em>only because</em> it was verified: the 365-day and 180-day fetches ran three minutes apart and all 297 overlapping threads were byte-identical. Same text, same prompt, same model, therefore same answer — and that saved 297 paid calls.</li>
+        <li><strong>Workflow embeddings</strong> key on thread ID + <em>the statement itself</em> + model. Because the embedded text is inside the key, a reworded statement automatically gets a new key. 142 vectors were correctly reused.</li>
+      </ul>
+
+      <div class="note">
+        <span class="note-label">The generation gap</span>
+        <p>When the improved grouping produced <code>report-365d-v2-…</code>, the filename parser did not recognise the <code>-v2-</code> segment — so auto-resolution silently fell back to the <em>old</em> v1 file. The pattern now understands generations and sorts by date, then generation, so a better algorithm's output always supersedes the run it replaces.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="testing">
+      <div class="sec-head"><span class="sec-num">13</span><h2 class="sec-title">How it is tested</h2></div>
+
+      <div class="figures-grid">
+        <div class="kfig"><dt>Tests</dt><dd>1,246</dd></div>
+        <div class="kfig"><dt>Test files</dt><dd>62</dd></div>
+        <div class="kfig"><dt>Runtime</dt><dd>~2s</dd></div>
+        <div class="kfig"><dt>Real API calls</dt><dd>0<small>every external call is faked</small></dd></div>
+      </div>
+
+      <p>The tests are not only about correctness of maths. A large share encode <em>safety properties</em> that would otherwise depend on someone remembering:</p>
+      <ul>
+        <li>The read-only Slack client contains no posting call — asserted by scanning the source for actual invocations, not just the word.</li>
+        <li>The publisher makes zero calls unless <code>--publish</code> is present — asserted by checking the guard appears before the client is constructed.</li>
+        <li>Mixed technical/workflow embedding batches are rejected.</li>
+        <li>A 90-day technical report is refused inside a 180-day review.</li>
+        <li>A fabricated score and rank from the model are ignored.</li>
+        <li>The transmitted prompt contains no thread ID, permalink or vector.</li>
+      </ul>
+
+      <p>Several real bugs were caught by tests during development, including a publisher that threw synchronously from a promise-returning method — which would have slipped straight past a <code>.catch()</code> — and test fixtures that used enum values the schema does not accept, hidden by a type cast.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="results">
+      <div class="sec-head"><span class="sec-num">14</span><h2 class="sec-title">What the year actually showed</h2></div>
+
+      <div class="figures-grid">
+        <div class="kfig"><dt>Threads analysed</dt><dd>644</dd></div>
+        <div class="kfig"><dt>Technical</dt><dd>269</dd></div>
+        <div class="kfig"><dt>Workflow candidates</dt><dd>314</dd></div>
+        <div class="kfig"><dt>Recurring defects</dt><dd>44<small>112 occurrences, 56 still open</small></dd></div>
+        <div class="kfig"><dt>Recurring workflows</dt><dd>31<small>221 one-off, not ranked</small></dd></div>
+        <div class="kfig"><dt>Coverage</dt><dd>360d<small>2025-08-18 → 2026-08-12</small></dd></div>
+      </div>
+
+      <h3>Top manual work to automate</h3>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Workflow</th><th class="num">Times</th><th>Status</th><th>Recommendation</th></tr></thead>
+        <tbody>
+          <tr><td>Update customer email across Dashboard, Stripe, HubSpot, Intercom</td><td class="num">8</td><td>all manual</td><td>Build guarded admin tool</td></tr>
+          <tr><td>Move policies between lifecycle states</td><td class="num">7</td><td>all manual</td><td>Build guarded admin tool</td></tr>
+          <tr><td>Reactivate a cancelled policy after payment</td><td class="num">4</td><td>all manual</td><td>Build guarded admin tool</td></tr>
+          <tr><td>Extend payment link expiry</td><td class="num">3</td><td>all manual</td><td><strong>Fix the product instead</strong></td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>Top recurring defects</h3>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Issue</th><th class="num">Times</th><th class="num">Open</th></tr></thead>
+        <tbody>
+          <tr><td>Duplicate Stripe customer accounts for the same email</td><td class="num">8</td><td class="num">5</td></tr>
+          <tr><td>Renewal notice delivery failure</td><td class="num">5</td><td class="num">0</td></tr>
+          <tr><td>Renewal notice fails on unsupported occupation codes</td><td class="num">4</td><td class="num">4</td></tr>
+          <tr><td>Quote/payment fails on deprecated occupation codes</td><td class="num">4</td><td class="num">4</td></tr>
+          <tr><td>Policy bind blocked by invalid trial end date</td><td class="num">4</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p>The single most useful finding: <strong>188 threads were workflow-only</strong> — pure manual requests that the original bug-only pipeline discarded entirely. Roughly a third of everything the technology team was asked to do in a year was invisible to the first version of this tool.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="commands">
+      <div class="sec-head"><span class="sec-num">15</span><h2 class="sec-title">Command reference</h2></div>
+
+      <p>Every stage that costs money or touches production supports <code>--dry-run</code>, which makes zero external calls and writes nothing.</p>
+
+      <h4>Shared</h4>
+      <pre><code>npm run slack:fetch      -- --days=365
+npm run intelligence:extract -- --input=data/slack/escalations-365d-&lt;date&gt;.json</code></pre>
+
+      <h4>Track A — technical</h4>
+      <pre><code>npm run intelligence:embed       -- --input=&lt;extractions&gt;
+npm run intelligence:adjudicate  -- --embeddings=&lt;emb&gt; --extractions=&lt;ext&gt;
+npm run intelligence:groups      -- --input=&lt;adjudications&gt; --extractions=&lt;ext&gt;
+npm run intelligence:report      -- --input=&lt;groups&gt;
+npm run intelligence:recommend   -- --input=&lt;report&gt;</code></pre>
+
+      <h4>Track B — workflows</h4>
+      <pre><code>npm run intelligence:workflow-embed       -- --input=&lt;extractions&gt;
+npm run intelligence:workflow-similarity  -- --input=&lt;workflow-embeddings&gt;
+npm run intelligence:workflow-adjudicate  -- --embeddings=&lt;workflow-embeddings&gt;
+npm run intelligence:workflow-clusters    -- --extractions=&lt;ext&gt; --adjudications=&lt;adj&gt;
+npm run intelligence:workflow-recommend   -- --input=&lt;workflow-clusters&gt;</code></pre>
+
+      <h4>Review and publish</h4>
+      <pre><code>npm run intelligence:review               -- --window=365d
+npm run intelligence:review-slack-preview -- --input=&lt;review&gt;
+npm run intelligence:review-slack-publish -- --input=&lt;preview&gt;          # dry run
+npm run intelligence:review-slack-publish -- --input=&lt;preview&gt; --publish # live</code></pre>
+
+      <h4>Utilities</h4>
+      <pre><code>npm run intelligence:workflow-summary  -- --input=&lt;extractions&gt;   # inspect locally
+npm run intelligence:regroup-v2        -- ...                     # complete-link regrouping
+npm run intelligence:slack-cleanup     -- --window=90d            # preview deletions
+npm run typecheck
+npm test</code></pre>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="lessons">
+      <div class="sec-head"><span class="sec-num">16</span><h2 class="sec-title">Lessons and design decisions</h2></div>
+
+      <p>If you present this project, these are the parts worth talking about — they are the decisions that were not obvious in advance.</p>
+
+      <h3>1 · Separate the question from the threshold</h3>
+      <p>Similarity picks candidates; a language model makes the judgement. Conflating those would have produced clusters based on vocabulary overlap rather than meaning, and no threshold value could have fixed it.</p>
+
+      <h3>2 · Let the LLM judge, never let it count</h3>
+      <p>Every number in the final report — occurrences, ranks, scores, dates, spans — is computed deterministically. The model contributes classifications and prose. The moment it was allowed to describe quantities, it produced confident fabrications, so the copy is now regenerated from stored evidence and guarded.</p>
+
+      <h3>3 · Cache keys must encode provenance, not just identity</h3>
+      <p>Three separate stages had caches keyed on IDs that legitimately repeat across datasets. Each would have silently served stale results. This is the bug class to look for first in any multi-dataset pipeline.</p>
+
+      <h3>4 · Precision beats recall for a leadership report</h3>
+      <p>Complete-link grouping leaves some threads ungrouped. That is the right trade when a person will read the output and act on it: an inflated count that names the same issue five times destroys trust faster than a conservative count that misses a few.</p>
+
+      <h3>5 · Make unsafe things impossible, not merely discouraged</h3>
+      <p>The read-only client has no posting method. The destination channel is a hard-coded constant with no CLI override. The cleanup tool has no way to discover a message. These are cheaper and more reliable than remembering to be careful.</p>
+
+      <h3>6 · Verify assumptions with data before spending money</h3>
+      <p>Before reusing 297 extractions, the two fetch files were hashed thread by thread to confirm the text was identical. Before trusting the 0.80 workflow floor, the full similarity distribution was measured. Before publishing, the group graph was inspected and two quality failures were found. Each check took minutes and prevented a bad, expensive outcome.</p>
+
+      <hr class="div">
+
+      <h3>Known gaps</h3>
+      <ul>
+        <li>The Voyage client has no automatic backoff for HTTP 429 — a rate-limit failure requires a manual retry.</li>
+        <li>Long stages buffer all output and write their artifact only at the end, so a crash mid-run loses the work with no resume point.</li>
+        <li>Complete-link grouping leaves 19 technical threads with real evidence outside any group. Recovering some of that recall would need a "matches most members" rule, which reintroduces a threshold judgement.</li>
+        <li>The generic <code>manual_backend_correction</code> classification covers 98 threads and is doing too much work; display titles now derive from the workflow statement to compensate.</li>
+      </ul>
+    </section>
+
+  </main>
+</div>

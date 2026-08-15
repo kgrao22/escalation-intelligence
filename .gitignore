@@ -1,0 +1,17 @@
+node_modules/
+
+# Machine-local Claude Code permissions (absolute paths)
+.claude/settings.local.json
+dist/
+coverage/
+
+# Fetched Slack data may contain customer information — never commit it
+data/
+
+# Secrets — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+.DS_Store
+*.log

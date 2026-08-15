@@ -1,0 +1,46 @@
+{
+  "name": "escalation-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Analyses Slack escalation threads to surface recurring technical issues worth automating or permanently fixing.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "slack:probe": "tsx src/cli/slack-probe.ts",
+    "slack:fetch": "tsx src/cli/slack-fetch.ts",
+    "intelligence:extract": "tsx src/cli/intelligence-extract.ts",
+    "intelligence:workflow-summary": "tsx src/cli/intelligence-workflow-summary.ts",
+    "intelligence:workflow-embed": "tsx src/cli/intelligence-workflow-embed.ts",
+    "intelligence:workflow-similarity": "tsx src/cli/intelligence-workflow-similarity.ts",
+    "intelligence:workflow-adjudicate": "tsx src/cli/intelligence-workflow-adjudicate.ts",
+    "intelligence:workflow-clusters": "tsx src/cli/intelligence-workflow-clusters.ts",
+    "intelligence:workflow-recommend": "tsx src/cli/intelligence-workflow-recommend.ts",
+    "intelligence:embed": "tsx src/cli/intelligence-embed.ts",
+    "intelligence:similarity": "tsx src/cli/intelligence-similarity.ts",
+    "intelligence:calibration-review": "tsx src/cli/intelligence-review.ts",
+    "intelligence:review": "tsx src/cli/intelligence-review-builder.ts",
+    "intelligence:adjudicate": "tsx src/cli/intelligence-adjudicate.ts",
+    "intelligence:groups": "tsx src/cli/intelligence-groups.ts",
+    "intelligence:report": "tsx src/cli/intelligence-report.ts",
+    "intelligence:recommend": "tsx src/cli/intelligence-recommend.ts",
+    "intelligence:slack-preview": "tsx src/cli/intelligence-slack-preview.ts",
+    "intelligence:slack-publish": "tsx src/cli/intelligence-slack-publish.ts",
+    "intelligence:slack-cleanup": "tsx src/cli/intelligence-slack-cleanup.ts",
+    "intelligence:review-slack-preview": "tsx src/cli/intelligence-review-slack-preview.ts",
+    "intelligence:review-slack-publish": "tsx src/cli/intelligence-review-slack-publish.ts",
+    "intelligence:regroup-v2": "tsx src/cli/intelligence-regroup-v2.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
+    "@slack/web-api": "^8.0.0",
+    "dotenv": "^17.4.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.11",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
