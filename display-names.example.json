@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "Copy to display-names.local.json (git-ignored) and replace these with your own.",
+    "Keys must match the persisted group name EXACTLY as it appears in the groups artifact.",
+    "Values are the short form shown in the Slack report. Anything unmapped renders unchanged.",
+    "Adjudication can propose different wordings for the same cluster across runs, so it is",
+    "worth mapping the alternate phrasings onto the same short form (see the last two below).",
+    "Entries whose value is not a string are ignored, so this comment block is harmless."
+  ],
+
+  "Scheduled export job silently skips records above the batch size limit": "Export batch size limit",
+  "Inbound webhook retries duplicate downstream records when the first attempt times out": "Webhook retry duplication",
+  "Report totals disagree with the detail view for date ranges spanning a month boundary": "Month-boundary total mismatch",
+  "Session expires mid-form and discards unsaved input without warning": "Session expiry data loss",
+  "Bulk import rejects the whole file when a single row fails validation": "Bulk import all-or-nothing failure",
+
+  "Scheduled export drops records past the batch limit": "Export batch size limit",
+  "Batch export omits records beyond the configured size ceiling": "Export batch size limit"
+}
